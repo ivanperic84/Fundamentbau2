@@ -7791,7 +7791,7 @@ function openCreateView(id) {
   document.getElementById('detail-view').style.display = 'none';
   const _cv = document.getElementById('create-view');
   _cv.style.display = 'block';
-  _cv.style.visibility = 'visible';
+  _cv.style.visibility = 'hidden';   // Layout berechnen ohne Flackern
   _cv.style.pointerEvents = '';
   document.getElementById('back-btn').style.display = 'flex';
   document.getElementById('create-view-title').textContent = id ? 'Standort bearbeiten' : 'Standort erfassen';
@@ -7899,17 +7899,17 @@ function openCreateView(id) {
   document.getElementById('create-map-search').value = '';
   document.getElementById('create-search-results').style.display = 'none';
 
-  // Karte nach DOM-Update initialisieren
-  // requestAnimationFrame stellt sicher, dass der Browser das Layout berechnet
-  // hat bevor Leaflet den Container ausmisst (display:none → block Timing-Problem)
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      initCreateMap(mapCenter);
-      setCreatePickMode('rs');
-      // Zusätzliche Kalibrierung für langsame Render-Pfade
-      setTimeout(() => { if (createMapLeaflet) createMapLeaflet.invalidateSize(); }, 200);
-    });
-  });
+  // Kartencontainer explizit bemassen und Layout synchron erzwingen,
+  // damit Leaflet beim Initialisieren korrekte Dimensionen vorfindet.
+  const _mapEl = document.getElementById('create-map');
+  _mapEl.style.height = (window.innerHeight - 110) + 'px';
+  void _mapEl.offsetHeight; // Forced layout — erzwingt Browser-Layout-Berechnung
+
+  initCreateMap(mapCenter);
+  setCreatePickMode('rs');
+
+  // Erst nach Leaflet-Init sichtbar machen (kein Flackern)
+  _cv.style.visibility = 'visible';
 }
 
 function initCreateMap(center) {
@@ -7926,14 +7926,12 @@ function initCreateMap(center) {
   const el = document.getElementById('create-map');
   if (!el) return;
 
-  createMapLeaflet = L.map('create-map', { zoomControl: true, attributionControl: false });
+  createMapLeaflet = L.map('create-map', { zoomControl: true, attributionControl: false })
+    .setView([center.lat, center.lng], 19);
 
   // Luftbild als Standard-Basiskarte
   L.tileLayer('https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/{z}/{x}/{y}.jpeg',
     { maxZoom: 20 }).addTo(createMapLeaflet);
-
-  createMapLeaflet.invalidateSize();
-  createMapLeaflet.setView([center.lat, center.lng], 19);
 
   // Bestehende Standorte ausgegraut anzeigen — nur in der Baugrundphase (Sondagen)
   _createExistingGroup = L.layerGroup().addTo(createMapLeaflet);
