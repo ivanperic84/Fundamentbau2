@@ -2462,7 +2462,7 @@ function renderCards() {
       card.style.backgroundColor = cardBg[pd.status] || cardBg.geplant;
 
       const cardHandler = (e) => {
-        if (e.target.closest('.qs-picker') || e.target.closest('.qs-badge') || e.target.closest('.card-actions')) return;
+        if (e.target.closest('.qs-picker') || e.target.closest('.qs-badge') || e.target.closest('.card-actions') || e.target.closest('.card-tag-picker')) return;
         showDetail(p.id);
       };
       card.addEventListener('click', cardHandler);
@@ -2471,12 +2471,21 @@ function renderCards() {
       card.addEventListener('touchmove',  (e) => { if (Math.abs(e.touches[0].clientX-_tX)>8||Math.abs(e.touches[0].clientY-_tY)>8) _tMoved=true; }, { passive: true });
       card.addEventListener('touchend',   (e) => {
         if (_tMoved) return;
-        if (e.target.closest('.qs-picker')||e.target.closest('.qs-badge')||e.target.closest('.card-actions')) return;
+        if (e.target.closest('.qs-picker')||e.target.closest('.qs-badge')||e.target.closest('.card-actions')||e.target.closest('.card-tag-picker')) return;
         e.preventDefault(); e.stopPropagation(); showDetail(p.id);
       }, { passive: false });
 
+      // Massnahme-Badge nur anzeigen wenn ein Wert gesetzt ist
+      const massnahmeSet = bpData.bestand || (bpData.fundtyp || '').startsWith('spezial-prov');
+      const massnahmeBadge = massnahmeSet
+        ? `<div class="card-tag" style="background:${col}22;color:${col};border:1px solid ${col}44;">${massLabel}</div>`
+        : '';
+
       card.innerHTML = `
         <div class="card-actions">
+          <button class="card-action-btn tag" title="Tags zuordnen" onclick="event.stopPropagation();toggleCardTagPicker(${p.id},this)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+          </button>
           <button class="card-action-btn edit" title="Bearbeiten" onclick="event.stopPropagation();openModal(${p.id})">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
@@ -2484,13 +2493,27 @@ function renderCards() {
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
           </button>
         </div>
+        <div class="card-tag-picker" id="card-tag-picker-${p.id}">
+          <div class="card-tag-picker-label">Tags</div>
+          ${customTags.length
+            ? customTags.map(t => {
+                const active = (getPairData(p.id).tags||[]).includes(t.id);
+                return `<label class="card-tag-picker-item">
+                  <input type="checkbox" ${active?'checked':''} onchange="togglePairTag(${p.id},'${t.id}')">
+                  <span style="color:${t.color}">${t.name}</span>
+                </label>`;
+              }).join('')
+            : '<span style="font-size:11px;color:#9ca3af;">Noch keine Tags.</span>'
+          }
+        </div>
         <div class="card-top">
           <div class="card-id">Mast ${p.mast || '—'}</div>
-          <div class="card-tag" style="background:${col}22;color:${col};border:1px solid ${col}44;">${massLabel}</div>
+          ${massnahmeBadge}
         </div>
         <div class="card-km">KM ${km}${fundtyp ? ' · ' + fundtyp : ''}${neigung ? ' · ' + neigung : ''}</div>
         <div class="card-zugang">${p.zugang || p.bezeichnung || ''}</div>
         <div class="card-footer" style="flex-direction:column;align-items:stretch;gap:6px;">
+          ${(pd.tags||[]).length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px;">${(pd.tags||[]).map(tid=>{const t=customTags.find(x=>x.id===tid);return t?`<span style="padding:2px 7px;border-radius:10px;font-size:10px;font-weight:600;background:${t.color}22;color:${t.color};">${t.name}</span>`:''}).join('')}</div>` : ''}
           <div style="display:flex;align-items:center;justify-content:space-between;">
             <div class="card-metas">
               ${pd.comment ? '<span class="card-comment-icon has-comment" title="Kommentar vorhanden"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>' : ''}
