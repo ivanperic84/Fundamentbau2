@@ -7453,8 +7453,6 @@ function openCreateView(id) {
     const bsTiefe = document.getElementById('c-bs-tiefe'); if (bsTiefe) bsTiefe.value = p.bs?.tiefe || '';
     const bsAbbruch = document.getElementById('c-bs-abbruch'); if (bsAbbruch) bsAbbruch.value = p.bs?.abbruch || '';
     const bsBem = document.getElementById('c-bs-bemerkung'); if (bsBem) bsBem.value = p.bs?.bemerkung || '';
-    const fundE = document.getElementById('c-fund-e'); if (fundE) fundE.value = p.fund?.e || '';
-    const fundN = document.getElementById('c-fund-n'); if (fundN) fundN.value = p.fund?.n || '';
     document.getElementById('c-fund-e2').value = p.rs?.e || '';
     document.getElementById('c-fund-n2').value = p.rs?.n || '';
     const _mc = lv95ToWgs84(p.rs.e, p.rs.n);
@@ -7468,7 +7466,7 @@ function openCreateView(id) {
      'c-rks-e','c-rks-n','c-bs-e','c-bs-n','c-bs-km','c-bs-tiefe','c-bs-abbruch','c-bs-bemerkung',
      'c-zugang','c-strecke','c-ausfuehrung',
      'c-massnahme','c-sicherung-link','c-sicherung-bemerkung','c-fundtyp',
-     'c-nachweis-link','c-nachweisgruppe','c-neigung','c-boden','c-fund-e','c-fund-n'
+     'c-nachweis-link','c-nachweisgruppe','c-neigung','c-boden'
     ].forEach(fid => { const el = document.getElementById(fid); if (el) el.value = ''; });
     document.getElementById('c-tag').value    = 'T1';
     document.getElementById('c-gleis').value  = 'L';
@@ -7554,9 +7552,6 @@ function initCreateMap(center) {
     const rksN = parseInt(document.getElementById('c-rks-n').value);
     if (rsE  && rsN)  placeCreateMarker('rs',  lv95ToWgs84(rsE,  rsN));
     if (rksE && rksN) placeCreateMarker('rks', lv95ToWgs84(rksE, rksN));
-    const fE = parseInt(document.getElementById('c-fund-e')?.value);
-    const fN = parseInt(document.getElementById('c-fund-n')?.value);
-    if (fE && fN) placeCreateMarker('fund', lv95ToWgs84(fE, fN));
   } else {
     // Bauprojekt / Ausführung: nur Fundamentstandort (c-fund-e2/n2 = RS-Koordinate)
     const fE2 = parseInt(document.getElementById('c-fund-e2')?.value);
@@ -7633,11 +7628,6 @@ function fillCreateCoords(type, latlng) {
     const bsN = document.getElementById('c-bs-n'); if (bsN) bsN.value = lv95.n;
     const bsLbl = document.getElementById('create-bs-coord-lbl');
     if (bsLbl) bsLbl.textContent = 'BS: E ' + lv95.e + ' / N ' + lv95.n;
-  } else if (type === 'fund') {
-    const fE = document.getElementById('c-fund-e'); if (fE) fE.value = lv95.e;
-    const fN = document.getElementById('c-fund-n'); if (fN) fN.value = lv95.n;
-    const fLbl = document.getElementById('create-fund-coord-lbl');
-    if (fLbl) fLbl.textContent = 'Fund: E ' + lv95.e + ' / N ' + lv95.n;
   }
 }
 
@@ -7964,7 +7954,6 @@ function saveCreate() {
     rs:  { e: rsE,  n: rsN  },
     rks: { e: rksE, n: rksN },
     bs:  (() => { const bsE = parseInt(v('c-bs-e')); const bsN = parseInt(v('c-bs-n')); return (bsE && bsN) ? { e: bsE, n: bsN, km: parseFloat(v('c-bs-km')) || null, tiefe: parseFloat(v('c-bs-tiefe')) || null, abbruch: v('c-bs-abbruch'), bemerkung: v('c-bs-bemerkung') } : null; })(),
-    fund: (() => { const fE = parseInt(v('c-fund-e')); const fN = parseInt(v('c-fund-n')); return (fE && fN) ? { e: fE, n: fN } : null; })(),
     _phase: _activePhase,   // Phase bei der Erfassung — für Filterung (Sondage vs. Fundamentstandort)
   };
   pushUndo();
@@ -11278,14 +11267,6 @@ function deleteFundament() {
           <div class="create-field">
             <label class="create-lbl"><span style="color:#b45309;">BS</span> N (LV95) <span style="font-weight:400;color:#9ca3af;">opt.</span></label>
             <input class="create-input" id="c-bs-n" type="number" placeholder="optional" onchange="syncCreateMarkerFromInput('bs')">
-          </div>
-          <div class="create-field">
-            <label class="create-lbl"><span style="color:#1a3a5c;">Fund</span> E (LV95) <span style="font-weight:400;color:#9ca3af;">opt.</span></label>
-            <input class="create-input" id="c-fund-e" type="number" placeholder="optional" onchange="syncCreateMarkerFromInput('fund')">
-          </div>
-          <div class="create-field">
-            <label class="create-lbl"><span style="color:#1a3a5c;">Fund</span> N (LV95) <span style="font-weight:400;color:#9ca3af;">opt.</span></label>
-            <input class="create-input" id="c-fund-n" type="number" placeholder="optional" onchange="syncCreateMarkerFromInput('fund')">
           </div>
         </div>
         <!-- BS Zusatzfelder -->
