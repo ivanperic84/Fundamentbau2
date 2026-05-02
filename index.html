@@ -5727,8 +5727,6 @@ function renderList() {
 
     const tr = document.createElement('tr');
     tr.style.background = checked ? '#eff6ff' : '';
-    // Farbiger linker Rand in BP-Phase je nach Massnahme
-    if (isBPlist && massSet) tr.style.borderLeft = `3px solid ${massCol}`;
 
     const dynCells = cols.map(c =>
       `<td onclick="showDetail(${p.id})" style="cursor:pointer;font-size:12px;">${c.render(p)}</td>`
