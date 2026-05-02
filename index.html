@@ -1550,8 +1550,8 @@
           <!-- Nachweis nur bei Spezial und Neubau -->
           <div id="bp-nachweis-wrap" style="display:none;margin-bottom:10px;">
             <label style="font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Statischer Nachweis</label>
-            <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:6px;padding:5px 8px;font-size:11px;color:#92400e;margin-bottom:5px;">
-              Spezialfundament — Statischer Nachweis erforderlich
+            <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;padding:5px 8px;font-size:11px;color:#0369a1;margin-bottom:5px;">
+              Spezialfundament — Statischer Nachweis erforderlich <em style="color:#6b7280;">(kann später ergänzt werden)</em>
             </div>
             <input id="bp-nachweis-link" type="url" onchange="saveBauprojektFeld()" placeholder="https://… oder Dok.-Nr." style="width:100%;padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;font-family:inherit;">
           </div>
@@ -1559,7 +1559,7 @@
           <!-- Geländeneigung -->
           <div style="margin-bottom:10px;">
             <label style="font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Geländeneigung</label>
-            <select id="bp-neigung" onchange="saveBauprojektFeld();updateBpFundAbmessung();updateBodenkennwerteUI()" style="width:100%;padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;font-family:inherit;background:white;">
+            <select id="bp-neigung" onchange="saveBauprojektFeld();updateBpFundAbmessung();updateBodenkennwerteUI();loadHoehenkoten()" style="width:100%;padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;font-family:inherit;background:white;">
               <option value="">— wählen —</option>
               <option value="≤14°">≤ 14°</option>
               <option value="14–33°">14° – 33°</option>
@@ -1579,6 +1579,37 @@
             <label style="font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Bemerkung</label>
             <textarea id="bp-bemerkung" rows="2" onchange="saveBauprojektFeld()" placeholder="Bemerkungen zum Fundament…" style="width:100%;padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;font-family:inherit;resize:vertical;"></textarea>
           </div>
+        </div>
+      </div>
+
+      <!-- HÖHENKOTEN Sektion (BP/AF) — Fundamentkopf + Sohle m ü.M. -->
+      <div class="sidebar-section" id="sec-hoehenkoten" style="display:none;">
+        <h3 onclick="toggleSection('sec-hoehenkoten')">
+          <span>Höhenkoten (m ü. M.)</span>
+          <span class="sb-chevron">▾</span>
+        </h3>
+        <div class="sb-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px;">
+            <div>
+              <label style="font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:3px;">Geländehöhe</label>
+              <div id="hk-gelaende" style="font-size:12px;padding:5px 8px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:6px;color:#374151;min-height:29px;">—</div>
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:3px;">Fundamentkopf</label>
+              <input id="sb-fundkopf-mueM" type="number" step="0.1" onchange="saveHoehenkoten()" placeholder="m ü.M."
+                style="width:100%;box-sizing:border-box;padding:5px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;font-family:inherit;">
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:3px;">Sohle</label>
+              <input id="sb-sohle-mueM" type="number" step="0.1" onchange="saveHoehenkoten()" placeholder="m ü.M."
+                style="width:100%;box-sizing:border-box;padding:5px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;font-family:inherit;">
+            </div>
+          </div>
+          <div id="hk-hinweis" style="font-size:10px;color:#6b7280;line-height:1.5;margin-bottom:5px;"></div>
+          <button onclick="recalcHoehenkoten()" title="Startwerte aus Geländehöhe + Neigung + Fundamenttyp berechnen"
+            style="width:100%;padding:5px 8px;border-radius:6px;border:1px solid #d1d5db;background:#f9fafb;font-size:11px;cursor:pointer;color:#374151;">
+            ↺ Startwerte berechnen
+          </button>
         </div>
       </div>
 
@@ -2721,7 +2752,8 @@ function renderMetaSection(pair) {
       ${hasRKS ? `<div class="meta-item"><label>RKS LV95</label><span style="font-size:10px;">${pair.rks.e} / ${pair.rks.n}</span></div>` : ''}
       ${pair.bs?.e ? `<div class="meta-item"><label>BS LV95</label><span style="font-size:10px;color:#b45309;">${pair.bs.e} / ${pair.bs.n}</span></div>` : ''}
       ${pair.bs?.km ? `<div class="meta-item"><label>BS KM</label><span>${fmt(pair.bs.km)}</span></div>` : ''}
-      ${pair.bs?.tiefe ? `<div class="meta-item"><label>BS Tiefe</label><span>${pair.bs.tiefe} m</span></div>` : ''}`;
+      ${pair.bs?.tiefe ? `<div class="meta-item"><label>BS Tiefe</label><span>${pair.bs.tiefe} m</span></div>` : ''}
+      ${pair.gelaendehoehe ? `<div class="meta-item"><label>Geländehöhe (m ü.M.)</label><span>${parseFloat(pair.gelaendehoehe).toFixed(1)} m</span></div>` : ''}`;
   }
 
   const pt = document.getElementById('pair-table');
@@ -7436,8 +7468,6 @@ function openCreateView(id) {
     document.getElementById('c-strecke').value      = p.strecke    || '';
     const _csnr = document.getElementById('c-streckennr'); if (_csnr) _csnr.value = p.streckennr || '';
     const _cgh  = document.getElementById('c-gelaendehoehe'); if (_cgh) _cgh.value = p.gelaendehoehe ?? '';
-    const _csol = document.getElementById('c-sohle-mueM');   if (_csol) _csol.value = p.sohle_mueM ?? '';
-    const _cfkp = document.getElementById('c-fundkopf-mueM'); if (_cfkp) _cfkp.value = p.fundkopf_mueM ?? '';
     document.getElementById('c-zugang').value       = p.zugang    || '';
     // Bauprojekt-Felder
     document.getElementById('c-ausfuehrung').value    = p.ausfuehrung || '';
@@ -7472,7 +7502,7 @@ function openCreateView(id) {
   } else {
     ['c-bezeichnung','c-mast','c-km-rs','c-km-rks','c-tiefe','c-rs-e','c-rs-n',
      'c-rks-e','c-rks-n','c-bs-e','c-bs-n','c-bs-km','c-bs-tiefe','c-bs-abbruch','c-bs-bemerkung',
-     'c-zugang','c-strecke','c-streckennr','c-gelaendehoehe','c-sohle-mueM','c-fundkopf-mueM','c-ausfuehrung',
+     'c-zugang','c-strecke','c-streckennr','c-gelaendehoehe','c-ausfuehrung',
      'c-massnahme','c-sicherung-link','c-sicherung-bemerkung','c-fundtyp',
      'c-nachweis-link','c-nachweisgruppe','c-neigung','c-boden'
     ].forEach(fid => { const el = document.getElementById(fid); if (el) el.value = ''; });
@@ -7684,20 +7714,8 @@ async function refreshGelaendehoeheCreate() {
   await fillGelaendehoeheCreate(e, n);
 }
 
-// Sohle m ü. M. = Geländehöhe − Einbindetiefe (Tiefe Soll)
-function updateSohleMueM() {
-  const gelaende = parseFloat(document.getElementById('c-gelaendehoehe')?.value);
-  const tiefe    = parseFloat(document.getElementById('c-tiefe')?.value) || parseFloat(document.getElementById('c-sohle-tiefe')?.value);
-  const sohlEl   = document.getElementById('c-sohle-mueM');
-  if (!sohlEl) return;
-  if (!isNaN(gelaende) && !isNaN(tiefe) && tiefe > 0) {
-    sohlEl.value = (gelaende - tiefe).toFixed(1);
-    sohlEl.style.background = '#f0fdf4';
-  } else {
-    sohlEl.value = '';
-    sohlEl.style.background = '';
-  }
-}
+// Höhenkoten werden in der Detailansicht berechnet (recalcHoehenkoten)
+function updateSohleMueM() { /* kein Create-Form-Feld mehr — Stub für Legacy-Aufrufe */ }
 
 // ----------------------------------------------------------------
 // SBB Bahn-KM Lookup via data.sbb.ch Open Data API
@@ -8069,8 +8087,6 @@ function saveCreate() {
     strecke:           v('c-strecke').trim(),
     streckennr:        v('c-streckennr').trim(),
     gelaendehoehe:     parseFloat(v('c-gelaendehoehe')) || null,
-    sohle_mueM:        parseFloat(v('c-sohle-mueM'))    || null,
-    fundkopf_mueM:     parseFloat(v('c-fundkopf-mueM')) || null,
     zugang:            v('c-zugang'),
     // Bauprojekt-Felder
     ausfuehrung:       v('c-ausfuehrung'),
@@ -8916,11 +8932,7 @@ function applyCreatePhase() {
   const fBP = document.getElementById('cs-felder-bauprojekt');
   if (fBG) fBG.style.display = isBG ? '' : 'none';
   if (fBP) fBP.style.display = (isBP || isAF) ? '' : 'none';
-  // Sohle + Fundamentkopf nur in BP/AF
-  const sohleWrap   = document.getElementById('cs-sohle-wrap');
-  const fundkopfWrap = document.getElementById('cs-fundkopf-wrap');
-  if (sohleWrap)    sohleWrap.style.display    = (isBP || isAF) ? '' : 'none';
-  if (fundkopfWrap) fundkopfWrap.style.display = (isBP || isAF) ? '' : 'none';
+  // Sohle + Fundamentkopf sind in der Detailansicht (nicht in der Erfassung)
 
   // Picker-Titel
   const mBPBtn = document.getElementById('create-btn-fund2');
@@ -9010,6 +9022,7 @@ function loadBauprojektFelder(pairId) {
   updateBpNachweisAndBoden();
   updateBodenkennwerteUI();
   updateBpFundAbmessung();
+  loadHoehenkoten();
 }
 
 function saveBauprojektFeld() {
@@ -9218,6 +9231,92 @@ function onBpFundtypChange() {
   saveBauprojektFeld();
   updateBpFundtypUI();
   updateBpFundAbmessung();
+  loadHoehenkoten(); // Sohle/Fundamentkopf neu anzeigen
+}
+
+// ----------------------------------------------------------------
+// HÖHENKOTEN — Fundamentkopf + Sohle m ü. M.
+// Fundamentkopf = Geländehöhe + 0.60 m (≤14°) / + 0.40 m (14–33°)
+// Sohle = Fundamentkopf − 1.00 m (Kopflänge) − Einbindetiefe
+// ----------------------------------------------------------------
+function loadHoehenkoten() {
+  if (!currentPairId) return;
+  const sec = document.getElementById('sec-hoehenkoten');
+  const isBP = _activePhase === 'bauprojekt' || _activePhase === 'ausfuehrung';
+  if (sec) sec.style.display = isBP ? '' : 'none';
+  if (!isBP) return;
+
+  const pair = PAIRS.find(p => p.id === currentPairId) || {};
+  const all = loadAllBauprojekt();
+  const bpData = all[currentPairId] || {};
+
+  // Geländehöhe anzeigen
+  const gelanEl = document.getElementById('hk-gelaende');
+  const gelaende = parseFloat(pair.gelaendehoehe);
+  if (gelanEl) gelanEl.textContent = !isNaN(gelaende) ? gelaende.toFixed(1) + ' m ü.M.' : '—';
+
+  // Gespeicherte Werte laden
+  const kopfEl = document.getElementById('sb-fundkopf-mueM');
+  const sohlEl = document.getElementById('sb-sohle-mueM');
+  if (kopfEl) kopfEl.value = bpData.fundkopf_mueM ?? '';
+  if (sohlEl) sohlEl.value = bpData.sohle_mueM    ?? '';
+
+  // Hinweis aus Berechnungsgrundlage
+  const hinweisEl = document.getElementById('hk-hinweis');
+  if (hinweisEl) hinweisEl.textContent = '⚑ Startwerte basieren auf Geländehöhe + Neigung + Fundamenttyp. Werte können manuell überschrieben oder per Excel aktualisiert werden.';
+}
+
+function recalcHoehenkoten() {
+  if (!currentPairId) return;
+  const pair = PAIRS.find(p => p.id === currentPairId) || {};
+  const gelaende = parseFloat(pair.gelaendehoehe);
+  if (isNaN(gelaende)) { alert('Keine Geländehöhe bekannt. Bitte Standort in der Erfassung mit 🔄 aktualisieren.'); return; }
+
+  const neigung  = document.getElementById('bp-neigung')?.value || '';
+  const fundtyp  = document.getElementById('bp-fundtyp')?.value  || '';
+
+  // Fundamentkopf-Offset über Terrain
+  let kopfOffset = null;
+  if (neigung === '≤14°')   kopfOffset = 0.60;
+  else if (neigung.includes('14'))  kopfOffset = 0.40;
+  if (kopfOffset === null) { alert('Bitte zuerst die Geländeneigung wählen.'); return; }
+
+  const fundamentkopf = gelaende + kopfOffset;
+
+  // Einbindetiefe aus FUND_ABMESSUNGEN
+  let sohle = null;
+  const neigKey = neigung.includes('14–33') ? '14–33°' : '≤14°';
+  const key = `${fundtyp}|${neigKey}`;
+  const abmessung = FUND_ABMESSUNGEN[key];
+  if (abmessung) {
+    const einbindetiefe = parseFloat(abmessung.tiefe);
+    // Sohle = Fundamentkopf − 1.00 m (Kopflänge) − Einbindetiefe
+    sohle = fundamentkopf - 1.00 - einbindetiefe;
+  }
+
+  const kopfEl = document.getElementById('sb-fundkopf-mueM');
+  const sohlEl = document.getElementById('sb-sohle-mueM');
+  const hinweisEl = document.getElementById('hk-hinweis');
+
+  if (kopfEl) { kopfEl.value = fundamentkopf.toFixed(1); kopfEl.style.background = '#f0fdf4'; setTimeout(() => { if (kopfEl) kopfEl.style.background = ''; }, 2000); }
+  if (sohlEl && sohle !== null) { sohlEl.value = sohle.toFixed(1); sohlEl.style.background = '#f0fdf4'; setTimeout(() => { if (sohlEl) sohlEl.style.background = ''; }, 2000); }
+
+  let hinweis = `Fundamentkopf: ${gelaende.toFixed(1)} + ${kopfOffset*100} cm = ${fundamentkopf.toFixed(1)} m ü.M.`;
+  if (abmessung) hinweis += ` · Sohle: ${fundamentkopf.toFixed(1)} − 1.00 m − ${abmessung.tiefe} = ${sohle.toFixed(1)} m ü.M. (${fundtyp})`;
+  else hinweis += ' · Sohle: Fundamenttyp nicht bekannt oder Spezial → manuell eintragen';
+  if (hinweisEl) hinweisEl.textContent = hinweis;
+
+  saveHoehenkoten();
+}
+
+function saveHoehenkoten() {
+  if (!currentPairId) return;
+  const all = loadAllBauprojekt();
+  const existing = all[currentPairId] || {};
+  const kopf = parseFloat(document.getElementById('sb-fundkopf-mueM')?.value);
+  const sohl = parseFloat(document.getElementById('sb-sohle-mueM')?.value);
+  all[currentPairId] = { ...existing, fundkopf_mueM: isNaN(kopf) ? null : kopf, sohle_mueM: isNaN(sohl) ? null : sohl };
+  saveAllBauprojekt(all);
 }
 
 function updateBpFundtypUI() {
@@ -11488,15 +11587,7 @@ function deleteFundament() {
               <button onclick="refreshGelaendehoeheCreate()" title="Geländehöhe von swisstopo abfragen" style="flex:0 0 auto;padding:5px 7px;border-radius:6px;border:1px solid #d1d5db;background:#f9fafb;cursor:pointer;font-size:13px;line-height:1;">🔄</button>
             </div>
           </div>
-          <!-- Sohle m ü.M. — nur in Bauprojekt/Ausführung sichtbar -->
-          <div class="create-field" id="cs-sohle-wrap" style="display:none;">
-            <label class="create-lbl">Sohle <span style="color:#9ca3af;font-weight:400;font-size:10px;">(m ü.M., berechnet)</span></label>
-            <input class="create-input" id="c-sohle-mueM" type="number" step="0.1" placeholder="= Gelände − Tiefe">
-          </div>
-          <div class="create-field" id="cs-fundkopf-wrap" style="display:none;">
-            <label class="create-lbl">Fundamentkopf <span style="color:#9ca3af;font-weight:400;font-size:10px;">(m ü.M.)</span></label>
-            <input class="create-input" id="c-fundkopf-mueM" type="number" step="0.1" placeholder="später / Excel">
-          </div>
+          <!-- Sohle + Fundamentkopf werden in der Detailansicht berechnet -->
         </div>
       </div>
 
