@@ -7789,7 +7789,10 @@ function openCreateView(id) {
   createEditId = id || null;
   document.getElementById('overview-view').style.display = 'none';
   document.getElementById('detail-view').style.display = 'none';
-  document.getElementById('create-view').style.display = 'block';
+  const _cv = document.getElementById('create-view');
+  _cv.style.display = 'block';
+  _cv.style.visibility = 'visible';
+  _cv.style.pointerEvents = '';
   document.getElementById('back-btn').style.display = 'flex';
   document.getElementById('create-view-title').textContent = id ? 'Standort bearbeiten' : 'Standort erfassen';
 
@@ -7900,6 +7903,8 @@ function openCreateView(id) {
   setTimeout(() => {
     initCreateMap(mapCenter);
     setCreatePickMode('rs');
+    // Leaflet nach sichtbarem Einblenden neu kalibrieren
+    setTimeout(() => { if (createMapLeaflet) createMapLeaflet.invalidateSize(); }, 150);
   }, 80);
 }
 
