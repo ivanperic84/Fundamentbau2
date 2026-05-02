@@ -5634,14 +5634,14 @@ function bulkDelete() {
 function renderList() {
   const cols = LIST_COLUMNS[_activePhase] || LIST_COLUMNS.baugrund;
 
-  // Header dynamisch setzen
+  // Header dynamisch setzen (phasenabhängige Spalten + Bezeichnung erste Spalte)
   const thead = document.querySelector('#list-table thead tr');
   if (thead) {
-    // Erste Spalte (Checkbox) und letzte (Icons) bleiben fix
     const fixedStart = thead.cells[0].outerHTML;
-    const nameCell   = thead.cells[1].outerHTML;
     const fixedEnd   = Array.from(thead.cells).slice(-2).map(c => c.outerHTML).join('');
-    thead.innerHTML  = fixedStart + nameCell
+    const nameLabel  = _activePhase === 'baugrund' ? 'Bezeichnung / Nr' : 'Mast / Nr';
+    thead.innerHTML  = fixedStart
+      + `<th style="padding:9px 10px;text-align:left;font-size:11px;font-weight:600;">${nameLabel}</th>`
       + cols.map(c => `<th style="padding:9px 10px;text-align:left;font-size:11px;font-weight:600;white-space:nowrap;">${c.label}</th>`).join('')
       + fixedEnd;
   }
@@ -5649,29 +5649,46 @@ function renderList() {
   const tbody = document.getElementById('list-body');
   tbody.innerHTML = '';
 
-  // Sondagen nur in Baugrundphase auflisten
-  if (_activePhase !== 'baugrund') {
+  const filtered = getFilteredSorted(); // bereits nach Phase gefiltert
+  if (!filtered.length) {
     const colCount = 2 + cols.length + 2;
     tbody.innerHTML = `<tr><td colspan="${colCount}" style="text-align:center;padding:40px;color:#9ca3af;font-size:13px;">
       <div style="font-size:24px;margin-bottom:8px;">📋</div>
-      <strong style="color:#6b7280;">${PHASEN_CONFIG[_activePhase]?.label || _activePhase}</strong><br>
-      Sondagestandorte werden in dieser Phase nicht aufgeführt.
+      <strong style="color:#6b7280;">Keine Einträge vorhanden</strong>
     </td></tr>`;
+    updateBulkBar();
     return;
   }
 
-  const filtered = getFilteredSorted();
+  const isBPlist = _activePhase !== 'baugrund';
   filtered.forEach(p => {
     const pd = getPairData(p.id);
     const checked = selectedIds.has(p.id);
+    const bpData = isBPlist ? (loadAllBauprojekt()[p.id] || {}) : {};
+    const massCol = isBPlist ? getMassnahmeColor(bpData) : null;
+    const massLbl = isBPlist ? getMassnahmeLabel(bpData) : null;
+    const massSet = isBPlist && (bpData.bestand || (bpData.fundtyp||'').startsWith('spezial-prov'));
+
     const tr = document.createElement('tr');
     tr.style.background = checked ? '#eff6ff' : '';
+    // Farbiger linker Rand in BP-Phase je nach Massnahme
+    if (isBPlist && massSet) tr.style.borderLeft = `3px solid ${massCol}`;
+
     const dynCells = cols.map(c =>
       `<td onclick="showDetail(${p.id})" style="cursor:pointer;font-size:12px;">${c.render(p)}</td>`
     ).join('');
+
+    const nameCell = isBPlist
+      ? `<td onclick="showDetail(${p.id})" style="cursor:pointer;">
+           <strong>Mast ${p.mast || '—'}</strong>
+           ${massSet ? `<span style="margin-left:6px;font-size:10px;font-weight:600;padding:1px 6px;border-radius:10px;background:${massCol}22;color:${massCol};border:1px solid ${massCol}44;">${massLbl}</span>` : ''}
+           ${p.bezeichnung ? `<div style="font-size:10px;color:#9ca3af;">${p.bezeichnung}</div>` : ''}
+         </td>`
+      : `<td onclick="showDetail(${p.id})" style="cursor:pointer"><strong>${p.bezeichnung || 'Standort '+p.id}</strong></td>`;
+
     tr.innerHTML = `
       <td onclick="event.stopPropagation()"><input type="checkbox" class="row-cb" data-id="${p.id}" ${checked?'checked':''} onchange="toggleRowSelect(${p.id},this)"></td>
-      <td onclick="showDetail(${p.id})" style="cursor:pointer"><strong>${p.bezeichnung || 'Standort '+p.id}</strong></td>
+      ${nameCell}
       ${dynCells}
       <td onclick="event.stopPropagation()" style="white-space:nowrap;">
         <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
@@ -5680,7 +5697,7 @@ function renderList() {
         </div>
       </td>
       <td><div class="list-icons">
-        ${hasFelddaten(p.id) ? '<span title="Felddaten" style="color:#9ca3af;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></span>' : ''}
+        ${!isBPlist && hasFelddaten(p.id) ? '<span title="Felddaten" style="color:#9ca3af;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></span>' : ''}
         ${pd.sketch ? '<span title="Skizze" style="color:#9ca3af;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></span>' : ''}
         ${pd.comment ? '<span title="Kommentar" style="color:#9ca3af;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>' : ''}
       </div></td>`;
