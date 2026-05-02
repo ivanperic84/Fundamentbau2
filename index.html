@@ -2489,8 +2489,7 @@ function renderCards() {
       </div>`;
     grid.appendChild(card);
   });
-  if (!filtered.length)
-    grid.innerHTML = '<div style="grid-column:1/-1;padding:20px;color:#9ca3af;text-align:center;">Keine Standorte in dieser Kategorie.</div>';
+  // Kein Leertext — leeres Grid ist selbsterklärend
 
   // "+ Neuer Standort" Kachel immer am Ende des Grids
   const addCard = document.createElement('div');
