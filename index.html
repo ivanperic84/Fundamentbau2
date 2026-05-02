@@ -7708,8 +7708,8 @@ async function lookupSbbKm(lat, lng, type) {
     // Hinweis anzeigen
     showKmHinweis(type, hinweis);
 
-    // Strecke & Gleisnummer parallel abfragen (nur beim ersten Typ RS)
-    if (type === 'rs') lookupSbbStrecke(lat, lng, 'create');
+    // Strecke direkt aus liniename befüllen (bereits aus der KM-Antwort bekannt)
+    if (type === 'rs') fillStreckeFromLiniename(linie, 'create');
 
   } catch (err) {
     kmField.style.background = '#fff7ed';
@@ -7735,68 +7735,44 @@ function showKmHinweis(type, text) {
   setTimeout(() => { if (el) el.style.display = 'none'; }, 12000);
 }
 
-// KM-Abfrage aus dem Edit-Modal heraus (via 🔍-Button)
-async function lookupSbbKmModal(type) {
-
 // ----------------------------------------------------------------
-// SBB Strecke & Gleisnummer Lookup
-// Datensatz: linie-mit-betriebspunkten
+// SBB Strecke-Feld aus bereits bekanntem Liniennamen befüllen
+// Wird direkt aus der KM-Antwort aufgerufen (kein extra API-Call)
 // ----------------------------------------------------------------
-async function lookupSbbStrecke(lat, lng, context) {
-  // context: 'create' = create-view Felder, 'modal' = modal Felder
+function fillStreckeFromLiniename(liniename, context) {
   const streckeField = document.getElementById(context === 'create' ? 'c-strecke' : 'm-strecke');
-  const gleisnrField = document.getElementById(context === 'create' ? 'c-gleisnr' : 'm-gleisnr');
-  const hinweisEl   = document.getElementById(context === 'create' ? 'strecke-hinweis' : 'strecke-hinweis-modal');
-  if (!streckeField || !gleisnrField) return;
-
-  streckeField.placeholder = '⏳ wird abgefragt…';
-
-  try {
-    const url = `https://data.sbb.ch/api/explore/v2.1/catalog/datasets/linie-mit-betriebspunkten/records`
-      + `?limit=1`
-      + `&order_by=distance(geopos,geom'POINT(${lng}%20${lat})')`
-      + `&select=*`;
-
-    const res = await fetch(url, { mode: "cors" });
-    if (!res.ok) throw new Error('API ' + res.status);
-    const data = await res.json();
-    if (!data.results || data.results.length === 0) throw new Error('Keine Daten');
-
-    const r = data.results[0];
-
-    // Feldnamen je nach API-Antwort flexibel auslesen
-    const strecke = r.linienname || r.linie_text || r.linien_text || r.name || r.linie || '';
-    const gleisnr = r.gleis_nr || r.gleisbezeichnung || r.gleis || r.track || r.gleislage || '';
-
-    streckeField.value       = strecke;
-    streckeField.placeholder = 'z.B. Weinfelden–Sulgen';
-    gleisnrField.value       = String(gleisnr);
-
-    if (hinweisEl) {
-      hinweisEl.textContent = `⚠️ Strecke & Gleis aus SBB Open Data (nächster Betriebspunkt) — bitte prüfen!`;
-      hinweisEl.style.display = '';
-      setTimeout(() => { hinweisEl.style.display = 'none'; }, 12000);
-    }
-  } catch(err) {
-    streckeField.placeholder = 'z.B. Weinfelden–Sulgen';
-    if (hinweisEl) {
-      hinweisEl.textContent = `⚠️ Strecke/Gleis konnte nicht abgefragt werden — bitte manuell eintragen.`;
-      hinweisEl.style.display = '';
-    }
-    console.warn('SBB Strecke Lookup Fehler:', err);
-  }
+  if (!streckeField || !liniename) return;
+  streckeField.value = liniename;
+  streckeField.placeholder = 'z.B. Weinfelden–Sulgen';
 }
 
-// Strecke/Gleis manuell via 🔍-Button im Modal abfragen
+// Strecke/Gleis manuell via 🔍-Button im Modal abfragen (Betriebspunkte-Datensatz)
 async function lookupSbbStreckeModal() {
   const eVal = parseInt(document.getElementById('m-rs-e').value);
   const nVal = parseInt(document.getElementById('m-rs-n').value);
   if (!eVal || !nVal) { alert('Bitte zuerst RS-Koordinaten eingeben.'); return; }
   const ll = lv95ToWgs84(eVal, nVal);
-  await lookupSbbStrecke(ll.lat, ll.lng, 'modal');
+  const streckeField = document.getElementById('m-strecke');
+  if (streckeField) streckeField.placeholder = '⏳ wird abgefragt…';
+  try {
+    const url = `https://data.sbb.ch/api/explore/v2.1/catalog/datasets/linie-mit-betriebspunkten/records`
+      + `?limit=1`
+      + `&order_by=distance(geopos,geom'POINT(${ll.lng}%20${ll.lat})')`
+      + `&select=linienname,linie`;
+    const res = await fetch(url, { mode: 'cors' });
+    if (!res.ok) throw new Error('API ' + res.status);
+    const data = await res.json();
+    if (!data.results?.length) throw new Error('Keine Daten');
+    const r = data.results[0];
+    fillStreckeFromLiniename(r.linienname || r.linie || '', 'modal');
+  } catch(err) {
+    if (streckeField) streckeField.placeholder = 'z.B. Weinfelden–Sulgen';
+    console.warn('SBB Strecke Modal Fehler:', err);
+  }
 }
 
-
+// KM-Abfrage aus dem Edit-Modal heraus (via 🔍-Button)
+async function lookupSbbKmModal(type) {
   const eVal = parseInt(document.getElementById('m-' + type + '-e').value);
   const nVal = parseInt(document.getElementById('m-' + type + '-n').value);
   if (!eVal || !nVal) {
@@ -7900,11 +7876,22 @@ function updateCreateDistance() {
               createRksMarker ? createRksMarker.getLatLng() : null;
   if (!ref) return;
 
-  // Filtere den aktuell bearbeiteten Standort heraus
-  const candidates = PAIRS.filter(p => p.id !== createEditId);
-  if (!candidates.length) return;
+  // In Bauprojekt/Ausführung: nur Fundamentstandorte (gleiche Phase), keine Sondagen
+  const isBaugrund = _activePhase === 'baugrund';
+  const label = isBaugrund ? 'Sondage' : 'Fundamentstandort';
 
-  // Nächste Sondage berechnen
+  // Filtere den aktuell bearbeiteten Standort heraus; in BP/AF nur Fundamente der gleichen Phase
+  const candidates = PAIRS.filter(p =>
+    p.id !== createEditId &&
+    (isBaugrund || (p._phase && p._phase !== 'baugrund'))
+  );
+  if (!candidates.length) {
+    document.getElementById('create-dist-box').style.display = 'none';
+    document.getElementById('create-dist-map-badge').style.display = 'none';
+    return;
+  }
+
+  // Nächsten Standort berechnen
   let minDist = Infinity, nearest = null;
   candidates.forEach(p => {
     const c = pairCenter(p);
@@ -7925,7 +7912,7 @@ function updateCreateDistance() {
 
   // Karten-Badge anzeigen
   const badge = document.getElementById('create-dist-map-badge');
-  badge.textContent = '📏 Nächste Sondage: ' + distText + ' (' + name + ')';
+  badge.textContent = '📏 Nächste ' + label + ': ' + distText + ' (' + name + ')';
   badge.style.display = 'block';
 }
 
@@ -7974,6 +7961,7 @@ function saveCreate() {
     rks: { e: rksE, n: rksN },
     bs:  (() => { const bsE = parseInt(v('c-bs-e')); const bsN = parseInt(v('c-bs-n')); return (bsE && bsN) ? { e: bsE, n: bsN, km: parseFloat(v('c-bs-km')) || null, tiefe: parseFloat(v('c-bs-tiefe')) || null, abbruch: v('c-bs-abbruch'), bemerkung: v('c-bs-bemerkung') } : null; })(),
     fund: (() => { const fE = parseInt(v('c-fund-e')); const fN = parseInt(v('c-fund-n')); return (fE && fN) ? { e: fE, n: fN } : null; })(),
+    _phase: _activePhase,   // Phase bei der Erfassung — für Filterung (Sondage vs. Fundamentstandort)
   };
   pushUndo();
   let savedId;
