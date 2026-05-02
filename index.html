@@ -7845,7 +7845,7 @@ function openCreateView(id) {
     const bsBem = document.getElementById('c-bs-bemerkung'); if (bsBem) bsBem.value = p.bs?.bemerkung || '';
     document.getElementById('c-fund-e2').value = p.rs?.e || '';
     document.getElementById('c-fund-n2').value = p.rs?.n || '';
-    const _mc = lv95ToWgs84(p.rs.e, p.rs.n);
+    const _mc = (p.rs?.e && p.rs?.n) ? lv95ToWgs84(p.rs.e, p.rs.n) : { invalid: true };
     mapCenter = _mc.invalid ? { lat: 47.566, lng: 9.106 } : _mc;
     // Konditionelle UI-Zustände wiederherstellen
     onCreateBestandChange();
@@ -7901,15 +7901,16 @@ function openCreateView(id) {
 
   // Kartencontainer explizit bemassen und Layout synchron erzwingen,
   // damit Leaflet beim Initialisieren korrekte Dimensionen vorfindet.
-  const _mapEl = document.getElementById('create-map');
-  _mapEl.style.height = (window.innerHeight - 110) + 'px';
-  void _mapEl.offsetHeight; // Forced layout — erzwingt Browser-Layout-Berechnung
-
-  initCreateMap(mapCenter);
-  setCreatePickMode('rs');
-
-  // Erst nach Leaflet-Init sichtbar machen (kein Flackern)
-  _cv.style.visibility = 'visible';
+  try {
+    const _mapEl = document.getElementById('create-map');
+    _mapEl.style.height = (window.innerHeight - 110) + 'px';
+    void _mapEl.offsetHeight; // Forced layout
+    initCreateMap(mapCenter);
+    setCreatePickMode('rs');
+  } finally {
+    // Immer sichtbar machen, auch wenn ein Fehler auftritt
+    _cv.style.visibility = 'visible';
+  }
 }
 
 function initCreateMap(center) {
