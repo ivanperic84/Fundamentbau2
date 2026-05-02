@@ -5675,7 +5675,7 @@ function initOverviewMap() {
             Mast ${mastLabel} &ndash; ${massLabel}
           </div>
           <div style="padding:7px 10px 4px;font-size:11px;line-height:1.6;">
-            ${p.km_rs ? `<div>KM ${fmt(p.km_rs)}</div>` : ''}
+            ${p.km_rs ? `<div>KM ${parseFloat(p.km_rs).toFixed(3)}</div>` : ''}
             ${bpData.fundtyp ? `<div>Typ: ${bpData.fundtyp}</div>` : ''}
           </div>
           <div style="padding:4px 10px 8px;border-top:1px solid #f0f2f5;">
