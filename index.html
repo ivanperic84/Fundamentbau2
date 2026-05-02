@@ -2430,8 +2430,7 @@ function renderCards() {
   const grid = document.getElementById('cards-grid');
   grid.innerHTML = '';
 
-  // Sondagen-Kacheln nur in der Baugrundphase anzeigen.
-  // Bauprojekt / Ausführung: nur die Erfassungskachel für Fundamentstandorte anzeigen.
+  // Bauprojekt / Ausführung: Fundamentstandorte als Kacheln anzeigen
   if (_activePhase !== 'baugrund') {
     const addCard = document.createElement('div');
     addCard.className = 'card card-add';
@@ -2439,6 +2438,33 @@ function renderCards() {
     addCard.onclick = () => openCreateView();
     addCard.innerHTML = '<div class="card-add-icon">+</div><div class="card-add-label">Neuer Fundamentstandort</div>';
     grid.appendChild(addCard);
+
+    const allBp = loadAllBauprojekt();
+    const fundPairs = PAIRS.filter(p => p._phase && p._phase !== 'baugrund');
+    fundPairs.forEach(p => {
+      const bpData   = allBp[p.id] || {};
+      const col      = getMassnahmeColor(bpData);
+      const massLabel= getMassnahmeLabel(bpData);
+      const fundtyp  = bpData.fundtyp || '';
+      const km       = fmt(p.km_rs || p.km_rks);
+
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.style.cssText = `background:#fff;cursor:pointer;border-top:4px solid ${col};`;
+      card.onclick = () => showDetail(p.id);
+
+      card.innerHTML = `
+        <div style="padding:10px 12px 8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:15px;font-weight:700;color:#1a3a5c;">${p.mast || '—'}</span>
+            <span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;background:${col}22;color:${col};border:1px solid ${col}55;">${massLabel}</span>
+          </div>
+          <div style="font-size:11px;color:#6b7280;margin-bottom:4px;">KM ${km}</div>
+          ${fundtyp ? `<div style="font-size:11px;color:#374151;font-weight:600;">${fundtyp}</div>` : ''}
+          ${p.bezeichnung ? `<div style="font-size:10px;color:#9ca3af;margin-top:3px;">${p.bezeichnung}</div>` : ''}
+        </div>`;
+      grid.appendChild(card);
+    });
     return;
   }
 
@@ -6390,7 +6416,10 @@ function refreshCurrentView() {
 }
 
 function getFilteredSorted() {
-  let list = [...PAIRS];
+  // Nur Standorte der aktuellen Phase anzeigen
+  let list = _activePhase === 'baugrund'
+    ? PAIRS.filter(p => !p._phase || p._phase === 'baugrund')
+    : PAIRS.filter(p => p._phase && p._phase !== 'baugrund');
   if (currentFilter !== 'alle') list = list.filter(p => getPairData(p.id).status === currentFilter);
   if (activeTagFilter) list = list.filter(p => (getPairData(p.id).tags || []).includes(activeTagFilter));
   if (searchQuery) {
