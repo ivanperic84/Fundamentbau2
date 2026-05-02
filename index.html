@@ -5754,7 +5754,7 @@ function openModal(id) {
   document.getElementById('modal-title').textContent = isFund ? 'Standort bearbeiten' : 'Sondage bearbeiten';
 
   // Phasenabhängige Felder
-  const baugrundOnly = ['mf-tag','mf-tiefe','mf-gleis','mf-km-rks','mf-rs-e','mf-rs-n','mf-rks-e','mf-rks-n'];
+  const baugrundOnly = ['mf-tag','mf-nacht','mf-tiefe','mf-gleis','mf-km-rks','mf-rs-e','mf-rs-n','mf-rks-e','mf-rks-n'];
   baugrundOnly.forEach(fid => { const el = document.getElementById(fid); if (el) el.style.display = isFund ? 'none' : ''; });
   ['mf-fund-e','mf-fund-n'].forEach(fid => { const el = document.getElementById(fid); if (el) el.style.display = isFund ? '' : 'none'; });
 
@@ -5774,7 +5774,8 @@ function openModal(id) {
   let mapCenter = { lat: 47.566, lng: 9.106 };
   if (p) {
     const mBez = document.getElementById('m-bezeichnung'); if (mBez) mBez.value = p.bezeichnung || '';
-    document.getElementById('m-tag').value         = p.tag || 'T1';
+    document.getElementById('m-tag').value         = p.tag   || '';
+    const _mnacht = document.getElementById('m-nacht'); if (_mnacht) _mnacht.value = p.nacht || '';
     document.getElementById('m-mast').value        = p.mast || '';
     document.getElementById('m-km-rs').value       = p.km_rs || '';
     document.getElementById('m-km-rks').value      = p.km_rks || '';
@@ -5834,6 +5835,7 @@ function saveModal() {
 
   const data = {
     tag:    v('m-tag'),
+    nacht:  (document.getElementById('m-nacht')?.value || ''),
     mast:   v('m-mast'),
     km_rs:  parseFloat(v('m-km-rs')) || 0,
     km_rks: parseFloat(v('m-km-rks')) || parseFloat(v('m-km-rs')) || 0,
@@ -7423,7 +7425,8 @@ function openCreateView(id) {
   if (id) {
     const p = PAIRS.find(x => x.id === id);
     document.getElementById('c-bezeichnung').value  = p.bezeichnung || '';
-    document.getElementById('c-tag').value          = p.tag || 'T1';
+    document.getElementById('c-tag').value          = p.tag   || '';
+    const _cnacht = document.getElementById('c-nacht'); if (_cnacht) _cnacht.value = p.nacht || '';
     document.getElementById('c-mast').value         = p.mast || '';
     document.getElementById('c-km-rs').value        = p.km_rs || '';
     document.getElementById('c-km-rks').value       = p.km_rks || '';
@@ -7470,7 +7473,8 @@ function openCreateView(id) {
      'c-massnahme','c-sicherung-link','c-sicherung-bemerkung','c-fundtyp',
      'c-nachweis-link','c-nachweisgruppe','c-neigung','c-boden'
     ].forEach(fid => { const el = document.getElementById(fid); if (el) el.value = ''; });
-    document.getElementById('c-tag').value    = 'T1';
+    document.getElementById('c-tag').value    = '';
+    const _cnaEl = document.getElementById('c-nacht'); if (_cnaEl) _cnaEl.value = '';
     document.getElementById('c-gleis').value  = 'L';
     document.getElementById('c-bestand').value = 'neu';
     onCreateBestandChange();
@@ -7983,14 +7987,17 @@ function saveCreate() {
   } else {
     rsE  = parseInt(v('c-rs-e'));  rsN  = parseInt(v('c-rs-n'));
     rksE = parseInt(v('c-rks-e')); rksN = parseInt(v('c-rks-n'));
-    if (!rsE || !rsN || !rksE || !rksN) {
-      alert('Bitte RS- und RKS-Koordinaten auf der Karte setzen oder manuell eingeben.'); return;
+    // Mindestens RS muss gesetzt sein; RKS ist optional (Fallback auf RS-Koordinaten)
+    if (!rsE || !rsN) {
+      alert('Bitte mindestens die RS-Koordinaten auf der Karte setzen oder manuell eingeben.'); return;
     }
+    if (!rksE || !rksN) { rksE = rsE; rksN = rsN; }
   }
 
   const data = {
     bezeichnung:       v('c-bezeichnung').trim(),
     tag:               isBP ? '' : v('c-tag'),
+    nacht:             isBP ? '' : v('c-nacht'),
     mast:              v('c-mast'),
     km_rs:             parseFloat(v('c-km-rs')) || 0,
     km_rks:            isBP ? parseFloat(v('c-km-rs')) || 0 : (parseFloat(v('c-km-rks')) || parseFloat(v('c-km-rs')) || 0),
@@ -11272,11 +11279,10 @@ function deleteFundament() {
 
       <!-- BAUGRUND: Marker setzen (RS + RKS + BS) -->
       <div class="create-section" id="cs-marker-baugrund">
-        <div class="create-pick-wrap" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;">
+        <div class="create-pick-wrap" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
           <button class="create-pick-btn rs active" id="create-btn-rs" onclick="setCreatePickMode('rs')">● RS setzen</button>
           <button class="create-pick-btn rks" id="create-btn-rks" onclick="setCreatePickMode('rks')">● RKS setzen</button>
           <button class="create-pick-btn" id="create-btn-bs" onclick="setCreatePickMode('bs')" style="border:2px solid #b45309;color:#b45309;background:white;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;">■ BS setzen</button>
-          <button class="create-pick-btn" id="create-btn-fund" onclick="setCreatePickMode('fund')" style="border:2px solid #1a3a5c;color:#1a3a5c;background:white;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;">◆ Fund.</button>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
           <div style="flex:1;font-size:11px;color:#2563eb;background:#eff6ff;border-radius:5px;padding:4px 7px;min-height:22px;min-width:80px;" id="create-rs-coord-lbl">RS: –</div>
@@ -11411,9 +11417,19 @@ function deleteFundament() {
           <div class="create-field">
             <label class="create-lbl">Tagarbeit</label>
             <select class="create-input" id="c-tag">
+              <option value="">—</option>
               <option>T1</option><option>T2</option><option>T3</option><option>T4</option>
               <option>T5</option><option>T6</option><option>T7</option><option>T8</option>
               <option>T9</option><option>T10</option><option>T11</option><option>T12</option>
+            </select>
+          </div>
+          <div class="create-field">
+            <label class="create-lbl">Nachtarbeit</label>
+            <select class="create-input" id="c-nacht">
+              <option value="">—</option>
+              <option>N1</option><option>N2</option><option>N3</option><option>N4</option>
+              <option>N5</option><option>N6</option><option>N7</option><option>N8</option>
+              <option>N9</option><option>N10</option><option>N11</option><option>N12</option>
             </select>
           </div>
           <div class="create-field">
@@ -11656,9 +11672,19 @@ function deleteFundament() {
       <div class="modal-field" id="mf-tag">
         <label>Tagarbeit</label>
         <select class="modal-input" id="m-tag">
+          <option value="">—</option>
           <option>T1</option><option>T2</option><option>T3</option><option>T4</option>
           <option>T5</option><option>T6</option><option>T7</option><option>T8</option>
           <option>T9</option><option>T10</option><option>T11</option><option>T12</option>
+        </select>
+      </div>
+      <div class="modal-field" id="mf-nacht">
+        <label>Nachtarbeit</label>
+        <select class="modal-input" id="m-nacht">
+          <option value="">—</option>
+          <option>N1</option><option>N2</option><option>N3</option><option>N4</option>
+          <option>N5</option><option>N6</option><option>N7</option><option>N8</option>
+          <option>N9</option><option>N10</option><option>N11</option><option>N12</option>
         </select>
       </div>
       <div class="modal-field" id="mf-tiefe">
