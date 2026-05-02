@@ -3992,13 +3992,13 @@ function addGhostMarkers(currentPair) {
     if (nb) neighbors.push(nb);
   }
 
-  neighbors.forEach(nb => {
-    const rsLL  = lv95ToWgs84(nb.rs.e,  nb.rs.n);
-    const rksLL = lv95ToWgs84(nb.rks.e, nb.rks.n);
-    const bez   = nb.bezeichnung || `S${nb.id}`;
-    const km    = nb.km_rs.toFixed(3);
+  const isAF = _activePhase === 'ausfuehrung';
 
-    const mkGhost = (ll, label) => {
+  neighbors.forEach(nb => {
+    const bez = nb.bezeichnung || nb.mast || `F${nb.id}`;
+    const km  = (nb.km_rs || 0).toFixed ? (nb.km_rs || 0).toFixed(3) : '—';
+
+    const mkGhost = (ll) => {
       const icon = L.divIcon({
         html: `<div style="
           width:28px;height:28px;border-radius:50%;
@@ -4018,8 +4018,17 @@ function addGhostMarkers(currentPair) {
         .on('click', () => showDetail(nb.id));
     };
 
-    ghostMarkers.push(mkGhost(rsLL,  'RS'));
-    ghostMarkers.push(mkGhost(rksLL, 'RKS'));
+    if (isAF) {
+      // AF-Phase: Ghost-Marker nur am Fundamentstandort (fund), nicht an Sondagenkoordinaten
+      const fundLL = nb.fund?.e && nb.fund?.n
+        ? lv95ToWgs84(nb.fund.e, nb.fund.n)
+        : (nb.rs?.e && nb.rs?.n ? lv95ToWgs84(nb.rs.e, nb.rs.n) : null);
+      if (fundLL) ghostMarkers.push(mkGhost(fundLL));
+    } else {
+      // Baugrund / Bauprojekt: Ghost-Marker an RS- und RKS-Koordinaten
+      if (nb.rs?.e  && nb.rs?.n)  ghostMarkers.push(mkGhost(lv95ToWgs84(nb.rs.e,  nb.rs.n)));
+      if (nb.rks?.e && nb.rks?.n) ghostMarkers.push(mkGhost(lv95ToWgs84(nb.rks.e, nb.rks.n)));
+    }
   });
 }
 
