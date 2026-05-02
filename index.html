@@ -5783,7 +5783,6 @@ function openModal(id) {
     const mSchlitz = document.getElementById('m-schlitz'); if (mSchlitz) mSchlitz.value = p.schlitz || '';
     document.getElementById('m-gleis').value       = p.gleis || 'L';
     document.getElementById('m-strecke').value     = p.strecke || '';
-    document.getElementById('m-gleisnr').value     = p.gleisnr || '';
     document.getElementById('m-rs-e').value        = p.rs?.e || '';
     document.getElementById('m-rs-n').value        = p.rs?.n || '';
     document.getElementById('m-rks-e').value       = p.rks?.e || '';
@@ -5842,7 +5841,6 @@ function saveModal() {
     schlitz: parseFloat(document.getElementById('m-schlitz')?.value) || 0,
     gleis:  v('m-gleis'),
     strecke:  v('m-strecke').trim(),
-    gleisnr:  v('m-gleisnr').trim(),
     rs:  rsE && rsN ? { e: rsE, n: rsN } : undefined,
     rks: rksE && rksN ? { e: rksE, n: rksN } : undefined,
     zugang: v('m-zugang'),
@@ -7432,7 +7430,6 @@ function openCreateView(id) {
     const schlitzEl = document.getElementById('c-schlitz'); if (schlitzEl) schlitzEl.value = p.schlitz || '';
     document.getElementById('c-gleis').value        = p.gleis || 'L';
     document.getElementById('c-strecke').value      = p.strecke || '';
-    document.getElementById('c-gleisnr').value      = p.gleisnr || '';
     document.getElementById('c-zugang').value       = p.zugang || '';
     // Bauprojekt-Felder
     document.getElementById('c-ausfuehrung').value    = p.ausfuehrung || '';
@@ -7469,7 +7466,7 @@ function openCreateView(id) {
   } else {
     ['c-bezeichnung','c-mast','c-km-rs','c-km-rks','c-tiefe','c-rs-e','c-rs-n',
      'c-rks-e','c-rks-n','c-bs-e','c-bs-n','c-bs-km','c-bs-tiefe','c-bs-abbruch','c-bs-bemerkung',
-     'c-zugang','c-strecke','c-gleisnr','c-ausfuehrung',
+     'c-zugang','c-strecke','c-ausfuehrung',
      'c-massnahme','c-sicherung-link','c-sicherung-bemerkung','c-fundtyp',
      'c-nachweis-link','c-nachweisgruppe','c-neigung','c-boden','c-fund-e','c-fund-n'
     ].forEach(fid => { const el = document.getElementById(fid); if (el) el.value = ''; });
@@ -7944,7 +7941,6 @@ function saveCreate() {
     schlitz:           parseFloat(v('c-schlitz')) || 0,
     gleis:             isBP ? '' : v('c-gleis'),
     strecke:           v('c-strecke').trim(),
-    gleisnr:           v('c-gleisnr').trim(),
     zugang:            v('c-zugang'),
     // Bauprojekt-Felder
     ausfuehrung:       v('c-ausfuehrung'),
@@ -11339,10 +11335,6 @@ function deleteFundament() {
             <label class="create-lbl">Strecke</label>
             <input class="create-input" id="c-strecke" placeholder="wird abgefragt…">
           </div>
-          <div class="create-field">
-            <label class="create-lbl">Gleisnummer</label>
-            <input class="create-input" id="c-gleisnr" placeholder="wird abgefragt…">
-          </div>
         </div>
         <div id="strecke-hinweis" style="display:none;font-size:11px;padding:5px 8px;border-radius:6px;margin-top:4px;background:#fef3c7;border:1px solid #fcd34d;color:#92400e;line-height:1.4;"></div>
       </div>
@@ -11588,10 +11580,6 @@ function deleteFundament() {
           <input class="modal-input" id="m-strecke" placeholder="z.B. Weinfelden–Sulgen" style="flex:1;">
           <button onclick="lookupSbbStreckeModal()" title="Strecke & Gleis von SBB abfragen" style="padding:6px 8px;border-radius:6px;border:1px solid #d1d5db;background:#f9fafb;cursor:pointer;font-size:11px;white-space:nowrap;color:#374151;">🔍</button>
         </div>
-      </div>
-      <div class="modal-field">
-        <label>Gleisnummer</label>
-        <input class="modal-input" id="m-gleisnr" placeholder="z.B. 101">
       </div>
       <div id="strecke-hinweis-modal" style="display:none;grid-column:1/-1;font-size:11px;padding:5px 8px;border-radius:6px;background:#fef3c7;border:1px solid #fcd34d;color:#92400e;line-height:1.4;"></div>
 
