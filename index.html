@@ -7905,8 +7905,22 @@ function openCreateView(id) {
 
   // Karte nach Layout-Berechnung initialisieren
   setTimeout(() => {
+    // DEBUG: Container-Dimensionen prüfen
+    const _dbgEl = document.getElementById('create-map');
+    const _dbgInfo = document.createElement('div');
+    _dbgInfo.id = 'create-map-debug';
+    _dbgInfo.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(255,0,0,0.85);color:white;padding:16px 24px;border-radius:8px;font-size:16px;font-weight:700;z-index:9999;text-align:center;pointer-events:none;';
+    _dbgInfo.innerHTML = `offsetH: ${_dbgEl.offsetHeight}px<br>offsetW: ${_dbgEl.offsetWidth}px<br>styleH: ${_dbgEl.style.height}`;
+    _dbgEl.style.position = 'relative';
+    _dbgEl.appendChild(_dbgInfo);
+
     initCreateMap(mapCenter);
     setCreatePickMode('rs');
+
+    if (createMapLeaflet) {
+      const _sz = createMapLeaflet.getSize();
+      _dbgInfo.innerHTML += `<br>Leaflet: ${_sz.x}×${_sz.y}`;
+    }
     setTimeout(() => { if (createMapLeaflet) createMapLeaflet.invalidateSize(); }, 200);
   }, 80);
 }
