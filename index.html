@@ -9513,12 +9513,19 @@ function _importFundamentlisteFromBuffer(buffer) {
 
       // FT-Namen normalisieren: "DP2a/2.0" → "DP2a / 2.0"
       const normFt = s => typeof s === 'string' ? s.replace(/\s*\/\s*/g, ' / ').trim() : '';
-      // Neigungsgrad → Label
+      // Neigungsgrad → Label; null/leer → leer (wird als "zu verifizieren" markiert)
       const toNeigLabel = deg => {
         const d = parseFloat(deg);
-        if (isNaN(d) || deg === null) return '';
-        return d <= 14 ? '≤14°' : d <= 33 ? '14–33°' : '>33°';
+        return isNaN(d) ? '' : d <= 14 ? '≤14°' : d <= 33 ? '14–33°' : '>33°';
       };
+      // GWSP-Zahl aus Fundamentliste → Grundwasser-Enum
+      const gwNumToEnum = v => {
+        if (v === null || v === '') return '';
+        const n = parseFloat(v);
+        return isNaN(n) ? 'unbekannt' : (n > 0 ? 'angetroffen' : 'nicht_angetroffen');
+      };
+      // USCS-Kürzel → Bodentyp (fein/grob)
+      const uscsToBodentyp = s => /^[GS]/i.test(String(s||'').trim()) ? 'grob' : 'fein';
 
       // ── Datenpositionen: Spalte A ist positive Dezimalzahl (km-Wert) ──
       const dataRows = rows.filter(r => r && r[0] !== null && !isNaN(parseFloat(r[0])) && parseFloat(r[0]) > 0);
@@ -9534,6 +9541,27 @@ function _importFundamentlisteFromBuffer(buffer) {
         const id     = i + 1;
         const ftName = normFt(r[20]);
         const ftMatch = ftCache.find(f => f.name === ftName);
+
+        // ── Geländeneigung ────────────────────────────────────────
+        const neigRaw   = r[12];
+        const neigLabel = toNeigLabel(neigRaw);
+        const noNeigung = neigRaw === null || neigRaw === '' || neigLabel === '';
+
+        // ── Bodenkennwerte ────────────────────────────────────────
+        const bkUscs  = r[13] != null ? String(r[13]).trim() : '';
+        const bkMe    = r[14] != null ? String(r[14]) : '';
+        const bkPhi   = r[15] != null ? String(r[15]) : '';
+        const bkGamma = r[16] != null ? String(r[16]) : '';
+        const bkC     = r[17] != null ? String(r[17]) : '';
+        const bkGwNum = r[18];
+        const bkGw    = bkGwNum != null ? String(bkGwNum) : '';
+        const noBoden = !bkUscs && !bkMe && !bkPhi && !bkGamma && !bkC && !bkGw;
+
+        // importVerify-Flags für Positionen die Nachprüfung brauchen
+        const importVerify = {};
+        if (noNeigung) importVerify.neigung = true;
+        if (noBoden)   importVerify.boden   = true;
+
         newPairs.push({
           id,
           km_rs:       parseFloat(r[0]) || 0,
@@ -9560,18 +9588,19 @@ function _importFundamentlisteFromBuffer(buffer) {
         newBP[id] = {
           bestand:       'neu',
           massnahme:     '',
-          neigung:       toNeigLabel(r[12]),
-          bkBodentyp:    r[13] != null ? String(r[13]) : '',
-          bkMe:          r[14] != null ? String(r[14]) : '',
-          bkPhi:         r[15] != null ? String(r[15]) : '',
-          bkGamma:       r[16] != null ? String(r[16]) : '',
-          bkC:           r[17] != null ? String(r[17]) : '',
-          bkGrundwasser: r[18] != null ? String(r[18]) : '',
+          neigung:       neigLabel,
+          bkBodentyp:    bkUscs,
+          bkMe,
+          bkPhi,
+          bkGamma,
+          bkC,
+          bkGrundwasser: bkGw,
           fundtyp:       ftName,
           ftProfilId:    ftMatch?.id || '',
           nachweisLink:  r[23] != null ? String(r[23]) : '',
           bemerkung:     r[25] != null ? String(r[25]) : '',
           vfk:           false,
+          ...(Object.keys(importVerify).length ? { importVerify } : {}),
         };
       });
 
@@ -9579,15 +9608,72 @@ function _importFundamentlisteFromBuffer(buffer) {
       const ftZuwNew = {};
       Object.entries(newBP).forEach(([id, bp]) => { if (bp.ftProfilId) ftZuwNew[id] = bp.ftProfilId; });
 
+      // ── Baugrundprofile aus Importdaten erstellen (mit Deduplizierung) ──
+      // Dedup-Schlüssel: USCS§ME§Phi§Gamma§C§GW — gleiche Werte → ein Profil
+      const existingBgProfiles = loadBgProfile();
+      const newBgProfiles      = [...existingBgProfiles];
+      const bgDedup            = {};  // key → profilId
+      // Vorhandene Profile in Dedup-Map eintragen
+      existingBgProfiles.forEach(p => {
+        const k = [p.uscs||'', p.me||'', p.phi||'', p.gamma||'', p.c||'', p.grundwasser||''].join('§');
+        if (!bgDedup[k]) bgDedup[k] = p.id;
+      });
+      // tempId (1-basiert aus dataRows) → bgProfilId
+      const tempToBgProfil = {};
+      let newProfCount = 0;
+      Object.entries(newBP).forEach(([idStr, bp]) => {
+        // Zeile überspringen wenn keine Bodenwerte vorhanden (importVerify.boden gesetzt)
+        if (!bp.bkBodentyp && !bp.bkMe && !bp.bkPhi && !bp.bkGamma && !bp.bkC && !bp.bkGrundwasser) return;
+        const gwEnum = gwNumToEnum(bp.bkGrundwasser);
+        const key = [bp.bkBodentyp, bp.bkMe, bp.bkPhi, bp.bkGamma, bp.bkC, gwEnum].join('§');
+        let profilId = bgDedup[key];
+        if (!profilId) {
+          newProfCount++;
+          profilId = 'bg_imp_' + Date.now() + '_' + newProfCount;
+          const bodentyp = uscsToBodentyp(bp.bkBodentyp);
+          newBgProfiles.push({
+            id:          profilId,
+            name:        `Import-Profil ${existingBgProfiles.length + newProfCount}` +
+                         (bp.bkBodentyp ? ` — ${bp.bkBodentyp}` : ''),
+            beschrieb:   '',
+            bodentyp,
+            uscs:        bp.bkBodentyp,
+            me:          bp.bkMe,
+            phi:         bp.bkPhi,
+            gamma:       bp.bkGamma,
+            c:           bp.bkC,
+            grundwasser: gwEnum,
+            gwTiefe:     bp.bkGrundwasser || '',
+            gwMueM:      '',
+            bemerkung:   'Automatisch aus Fundamentliste-Import erstellt',
+          });
+          bgDedup[key] = profilId;
+        }
+        tempToBgProfil[idStr] = profilId;
+        // bgProfilId auch in newBP eintragen damit assignBgProfil-Logik greift
+        bp.bgProfilId = profilId;
+      });
+
       const replace = confirm(
         `${newPairs.length} Positionen gefunden.\n\nOK = Bestehendes ersetzen\nAbbrechen = Zu bestehendem hinzufügen`
       );
       pushUndo();
+
+      // Baugrundprofile immer speichern (Deduplizierung berücksichtigt bestehende)
+      if (newBgProfiles.length > existingBgProfiles.length) saveBgProfile(newBgProfiles);
+
+      let finalBgZuw = { ...loadBgZuweisungen() };
+
       if (replace) {
         PAIRS.length = 0;
         newPairs.forEach(p => PAIRS.push(p));
         saveAllBauprojekt(newBP);
         saveFtZuweisungen(ftZuwNew);
+        // BG-Zuweisungen für neue (ersetzte) Pairs aufbauen
+        finalBgZuw = {};
+        Object.entries(tempToBgProfil).forEach(([tmpId, bgId]) => {
+          finalBgZuw[tmpId] = bgId;
+        });
       } else {
         const maxId  = PAIRS.length ? Math.max(...PAIRS.map(p => p.id)) : 0;
         const allBP  = loadAllBauprojekt();
@@ -9596,12 +9682,25 @@ function _importFundamentlisteFromBuffer(buffer) {
           const nid = maxId + i + 1;
           PAIRS.push({ ...p, id: nid });
           allBP[nid]  = newBP[p.id];
-          if (ftZuwNew[p.id]) allFtZ[nid] = ftZuwNew[p.id];
+          if (ftZuwNew[p.id])           allFtZ[nid]    = ftZuwNew[p.id];
+          if (tempToBgProfil[p.id])     finalBgZuw[nid]= tempToBgProfil[p.id];
         });
         saveAllBauprojekt(allBP);
         saveFtZuweisungen(allFtZ);
       }
+      saveBgZuweisungen(finalBgZuw);
       savePairs();
+
+      // Zusammenfassung Verifikationspositionen
+      const needNeig  = Object.values(newBP).filter(b => b.importVerify?.neigung).length;
+      const needBoden = Object.values(newBP).filter(b => b.importVerify?.boden).length;
+      const warnParts = [];
+      if (needNeig)  warnParts.push(`${needNeig} ohne Geländeneigung`);
+      if (needBoden) warnParts.push(`${needBoden} ohne Baugrundkennwerte`);
+      const warnMsg  = warnParts.length
+        ? `\n\n⚠ Zu verifizieren: ${warnParts.join(', ')}\n   (im Bauprogramm orange markiert)`
+        : '';
+      const bgMsg = newProfCount > 0 ? `\n${newProfCount} Baugrundprofil(e) erstellt.` : '';
 
       // Projektmetadaten übernehmen
       if (projName) {
@@ -9626,7 +9725,7 @@ function _importFundamentlisteFromBuffer(buffer) {
       autoRegisterSchichtenFromPairs(newPairs);
       setPhase('bauprojekt');
       renderCards();
-      alert(`Import abgeschlossen: ${newPairs.length} Positionen ${replace ? 'ersetzt' : 'hinzugefügt'}.`);
+      alert(`Import abgeschlossen: ${newPairs.length} Positionen ${replace ? 'ersetzt' : 'hinzugefügt'}.${bgMsg}${warnMsg}`);
     } catch(err) {
       alert('Fehler beim Lesen der Fundamentliste:\n' + err.message);
       console.error(err);
@@ -17416,8 +17515,10 @@ function assignBgProfil(pairId, profilId) {
       all[pairId] = {
         ...(all[pairId] || {}),
         bkBodentyp:    profil.bodentyp || 'fein',
-        bkMe:          profil.me || '',
-        bkPhi:         profil.phi || '',
+        bkMe:          profil.me       || '',
+        bkPhi:         profil.phi      || '',
+        bkGamma:       profil.gamma    || '',
+        bkC:           profil.c        || '',
         bkGrundwasser: profil.grundwasser || '',
         bgProfilId:    profilId,
       };
@@ -17453,12 +17554,14 @@ function openBaugrundProfilModal(id) {
     v('bg-prof-uscs',       p.uscs);
     v('bg-prof-me',         p.me);
     v('bg-prof-phi',        p.phi);
+    v('bg-prof-gamma',      p.gamma || '');
+    v('bg-prof-c',          p.c     || '');
     v('bg-prof-grundwasser',p.grundwasser);
     v('bg-prof-gw-tiefe',   p.gwTiefe);
     v('bg-prof-gw-mueM',    p.gwMueM);
     v('bg-prof-bemerkung',  p.bemerkung);
   } else {
-    ['bg-prof-name','bg-prof-beschrieb','bg-prof-uscs','bg-prof-me','bg-prof-phi','bg-prof-gw-tiefe','bg-prof-bemerkung'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    ['bg-prof-name','bg-prof-beschrieb','bg-prof-uscs','bg-prof-me','bg-prof-phi','bg-prof-gamma','bg-prof-c','bg-prof-gw-tiefe','bg-prof-bemerkung'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     v('bg-prof-bodentyp',''); v('bg-prof-grundwasser','');
     const gwEl = document.getElementById('bg-prof-gw-mueM'); if (gwEl) gwEl.value = '';
   }
@@ -17510,6 +17613,8 @@ function saveBaugrundProfil() {
     uscs:        v('bg-prof-uscs'),
     me:          v('bg-prof-me'),
     phi:         v('bg-prof-phi'),
+    gamma:       v('bg-prof-gamma'),
+    c:           v('bg-prof-c'),
     grundwasser: v('bg-prof-grundwasser'),
     gwTiefe:     v('bg-prof-gw-tiefe'),
     gwMueM:      v('bg-prof-gw-mueM'),
@@ -20553,12 +20658,25 @@ function renderBpZuweisungTable() {
 
     const cbCell = '<td style="' + tdS + 'width:36px;text-align:center;"><input type="checkbox" ' + (sel ? 'checked' : '') + ' onclick="bpZuwToggleRow(' + p.id + ',this.checked)" style="width:14px;height:14px;cursor:pointer;accent-color:#3b82f6;"></td>';
 
-    return '<tr class="list-hover-row" style="background:' + rowBg + ';' + rowBorder + '" id="' + rowId + '">'
+    // Import-Verifikations-Chips (Geländeneigung / Baugrundkennwerte fehlen)
+    const iv = bp2.importVerify || {};
+    const verifyChips = [
+      iv.neigung ? '<span title="Geländeneigung fehlt — bitte verifizieren" style="display:inline-flex;align-items:center;gap:3px;padding:2px 5px;border-radius:4px;font-size:9px;font-weight:700;background:#fef3c7;color:#92400e;border:1px solid #fde68a;white-space:nowrap;">⚠ Neigung</span>' : '',
+      iv.boden   ? '<span title="Baugrundkennwerte fehlen — Standardtyp-Tauglichkeit unklar" style="display:inline-flex;align-items:center;gap:3px;padding:2px 5px;border-radius:4px;font-size:9px;font-weight:700;background:#fef3c7;color:#92400e;border:1px solid #fde68a;white-space:nowrap;">⚠ Baugrund</span>' : '',
+    ].filter(Boolean).join(' ');
+    const hasVerify = iv.neigung || iv.boden;
+    // Zeile mit Amber-Linksrand wenn Verifikation nötig
+    const verifyBorder = hasVerify ? 'border-left:3px solid #f59e0b;' : '';
+
+    return '<tr class="list-hover-row" style="background:' + rowBg + ';' + verifyBorder + rowBorder + '" id="' + rowId + '">'
       + cbCell
       + '<td style="' + tdS + 'font-weight:700;color:#1a3a5c;">Mast ' + (p.mast||'—') + '</td>'
       + '<td style="' + tdS + 'color:#6b7280;">' + (p.km_rs ? parseFloat(p.km_rs).toFixed(3) : '—') + '</td>'
       + '<td style="' + tdS + 'text-align:center;">' + typBadge + '</td>'
-      + '<td style="' + tdS + '">' + (ft ? '<span onclick="openFundtypProfilModal(\'' + ft.id + '\')" title="Fundamenttyp bearbeiten" style="font-size:11px;color:#374151;cursor:pointer;text-decoration:underline;text-decoration-color:#d1d5db;" onmouseover="this.style.color=\'#1d4ed8\'" onmouseout="this.style.color=\'#374151\'">' + _ftLabel(ft) + ' ↗</span>' : '<span style="color:#d1d5db;">—</span>') + '</td>'
+      + '<td style="' + tdS + '">'
+        + (ft ? '<span onclick="openFundtypProfilModal(\'' + ft.id + '\')" title="Fundamenttyp bearbeiten" style="font-size:11px;color:#374151;cursor:pointer;text-decoration:underline;text-decoration-color:#d1d5db;" onmouseover="this.style.color=\'#1d4ed8\'" onmouseout="this.style.color=\'#374151\'">' + _ftLabel(ft) + ' ↗</span>' : '<span style="color:#d1d5db;">—</span>')
+        + (verifyChips ? '<div style="margin-top:3px;display:flex;gap:3px;flex-wrap:wrap;">' + verifyChips + '</div>' : '')
+        + '</td>'
       + (istPfahl && rowMode === 'neubau'
         ? '<td style="' + tdS + '">'
             + (baugruppe ? '<span style="font-size:10px;background:#f0f4ff;color:#3730a3;padding:2px 6px;border-radius:4px;font-weight:600;">' + baugruppe.name + '</span> <button onclick="bpGruppeAufteilen(' + p.id + ')" title="In eigene Gruppe verschieben" style="padding:1px 6px;border-radius:4px;border:1px solid #d1d5db;background:white;font-size:10px;color:#6b7280;cursor:pointer;" onmouseover="this.style.background=\'#f3f4f6\'" onmouseout="this.style.background=\'white\'">↗</button>' : '<span style="color:#9ca3af;font-size:11px;">—</span>')
@@ -29749,11 +29867,19 @@ document.addEventListener('mouseup',   e => { bpResizeEnd(e);  bpMoveEnd(e);  bp
       </div>
       <div class="modal-field">
         <label>ME-Wert [MPa]</label>
-        <input class="modal-input" id="bg-prof-me" type="number" step="0.5" placeholder="z.B. 15">
+        <input class="modal-input" id="bg-prof-me" type="number" step="0.5" placeholder="z.B. 15" oninput="updateBgProfilBeurteilung()">
       </div>
       <div class="modal-field">
         <label>Reibungswinkel φ'k [°]</label>
-        <input class="modal-input" id="bg-prof-phi" type="number" step="0.5" placeholder="z.B. 30">
+        <input class="modal-input" id="bg-prof-phi" type="number" step="0.5" placeholder="z.B. 30" oninput="updateBgProfilBeurteilung()">
+      </div>
+      <div class="modal-field">
+        <label>Raumlast γ'k [kN/m³]</label>
+        <input class="modal-input" id="bg-prof-gamma" type="number" step="0.5" placeholder="z.B. 20">
+      </div>
+      <div class="modal-field">
+        <label>Kohäsion c'k [kPa]</label>
+        <input class="modal-input" id="bg-prof-c" type="number" step="0.5" placeholder="z.B. 0">
       </div>
       <div class="modal-field">
         <label>Grundwasser (Antreffsituation)</label>
