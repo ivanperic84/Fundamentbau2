@@ -1057,6 +1057,11 @@
     <div id="list-toolbar" style="display:flex;align-items:center;justify-content:space-between;padding:6px 0 8px;gap:8px;">
       <span id="list-count" style="font-size:11px;color:#6b7280;"></span>
       <div style="display:flex;gap:6px;">
+        <button id="list-edit-mode-btn" onclick="toggleListEditMode()"
+          style="padding:4px 10px;border-radius:6px;border:1px solid #d1d5db;background:white;font-size:11px;cursor:pointer;color:#374151;display:flex;align-items:center;gap:4px;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Bearbeiten
+        </button>
         <button onclick="toggleListColumnPicker(this)" id="list-col-picker-btn"
           style="padding:4px 10px;border-radius:6px;border:1px solid #d1d5db;background:white;font-size:11px;cursor:pointer;color:#374151;display:flex;align-items:center;gap:4px;">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
@@ -2385,9 +2390,12 @@
           <!-- Fundamenttyp — zweistufig: Familie + Tiefe -->
           <div style="margin-bottom:10px;">
             <label style="font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Fundamenttyp</label>
-            <select id="bp-ft-familie" onchange="onBpFamilieChange()" style="width:100%;padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;font-family:inherit;background:white;">
-              <option value="">— Familie wählen —</option>
-            </select>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <select id="bp-ft-familie" onchange="onBpFamilieChange()" style="flex:1;min-width:0;padding:5px 7px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;font-family:inherit;background:white;color:#374151;overflow:hidden;text-overflow:ellipsis;">
+                <option value="">— Familie wählen —</option>
+              </select>
+              <button onclick="onBpFtBearbeitenClick()" style="padding:4px 10px;border-radius:5px;border:1px solid #c7d2e8;background:white;color:#1a3a5c;cursor:pointer;font-size:11px;font-weight:600;flex-shrink:0;white-space:nowrap;" onmouseover="this.style.background='#e8eef7'" onmouseout="this.style.background='white'">Bearbeiten</button>
+            </div>
           </div>
           <!-- Tiefe-Picker: nur bei mehreren Varianten pro Familie+Neigung -->
           <div id="bp-ft-tiefe-wrap" style="margin-bottom:10px;display:none;">
@@ -2507,90 +2515,13 @@
             Änderungen bitte in Absprache mit dem FI vornehmen.
           </div>
 
-          <!-- Bodentyp -->
-          <div style="margin-bottom:10px;">
-            <label style="font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Bodentyp</label>
-            <div style="display:flex;gap:6px;">
-              <button id="bk-btn-fein" style="flex:1;padding:6px;border-radius:6px;border:2px solid #374151;background:#f3f4f6;color:#374151;font-size:11px;font-weight:700;cursor:default;pointer-events:none;">Feinkörnig</button>
-              <button id="bk-btn-grob" style="flex:1;padding:6px;border-radius:6px;border:2px solid #e5e7eb;background:white;color:#6b7280;font-size:11px;font-weight:700;cursor:default;pointer-events:none;">Grobkörnig</button>
-            </div>
-            <div id="bk-bodentyp-hinweis" style="font-size:10px;color:#6b7280;margin-top:4px;"></div>
-          </div>
-
-          <!-- Grenzwerte Übersicht -->
-          <div id="bk-grenzwerte" style="margin-bottom:10px;font-size:11px;color:#6b7280;line-height:1.7;">
-            <div style="font-weight:700;margin-bottom:3px;color:#6b7280;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;">Grenzwerte (gem. 0161.1011.0010)</div>
-            <div>Reibungswinkel φ'k ≥ <strong>27°</strong></div>
-            <div id="bk-me-grenzwert">ME ≥ <strong>12 MPa</strong> (feinkörnig)</div>
-            <div>Grundwasser: <strong>unterhalb Fundament</strong></div>
-            <div>Neigung: <strong>≤ 33°</strong></div>
-          </div>
-
-          <!-- ME-Wert -->
-          <div style="margin-bottom:8px;">
-            <label style="font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:3px;">
-              ME-Wert (effektiv)
-              <span id="bk-me-einheit" style="font-weight:400;color:#9ca3af;"> [MPa]</span>
-            </label>
-            <div style="display:flex;gap:6px;align-items:center;">
-              <input id="bk-me-wert" type="number" step="0.5" min="0" placeholder="—" readonly
-                style="flex:1;padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;font-family:inherit;background:#f3f4f6;color:#6b7280;cursor:default;">
-              <span id="bk-me-status" style="font-size:18px;min-width:20px;text-align:center;"></span>
-            </div>
-            <div id="bk-me-hinweis" style="display:none;font-size:11px;margin-top:3px;padding:3px 7px;border-radius:4px;"></div>
-          </div>
-
-          <!-- Reibungswinkel -->
-          <div style="margin-bottom:8px;">
-            <label style="font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:3px;">
-              Reibungswinkel φ'k
-              <span style="font-weight:400;color:#9ca3af;"> [°]</span>
-            </label>
-            <div style="display:flex;gap:6px;align-items:center;">
-              <input id="bk-phi-wert" type="number" step="0.5" min="0" max="50" placeholder="—" readonly
-                style="flex:1;padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;font-family:inherit;background:#f3f4f6;color:#6b7280;cursor:default;">
-              <span id="bk-phi-status" style="font-size:18px;min-width:20px;text-align:center;"></span>
-            </div>
-            <div id="bk-phi-hinweis" style="display:none;font-size:11px;margin-top:3px;padding:3px 7px;border-radius:4px;"></div>
-          </div>
-
-          <!-- Raumlast -->
-          <div style="margin-bottom:8px;">
-            <label style="font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:3px;">
-              Raumlast γ'k
-              <span style="font-weight:400;color:#9ca3af;"> [kN/m³]</span>
-            </label>
-            <input id="bk-gamma-wert" type="number" step="0.5" min="0" placeholder="—"
-              style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;font-family:inherit;"
-              oninput="saveBodenkennwerte()">
-          </div>
-
-          <!-- Kohäsion -->
-          <div style="margin-bottom:8px;">
-            <label style="font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:3px;">
-              Kohäsion c'k
-              <span style="font-weight:400;color:#9ca3af;"> [kPa]</span>
-            </label>
-            <input id="bk-c-wert" type="number" step="0.5" min="0" placeholder="—"
-              style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;font-family:inherit;"
-              oninput="saveBodenkennwerte()">
-          </div>
-
-          <!-- Grundwasser -->
-          <div style="margin-bottom:8px;">
-            <label style="font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:3px;">Grundwasser</label>
-            <div style="display:flex;gap:6px;align-items:center;">
-              <select id="bk-grundwasser" disabled
-                style="flex:1;padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;font-family:inherit;background:#f3f4f6;color:#6b7280;cursor:default;">
-                <option value="">— wählen —</option>
-                <option value="ok">Unterhalb Fundament</option>
-                <option value="nok">Oberhalb / im Fundamentbereich</option>
-                <option value="unbekannt">Unbekannt</option>
-              </select>
-              <span id="bk-gw-status" style="font-size:18px;min-width:20px;text-align:center;"></span>
-            </div>
-          </div>
-
+          <!-- Kompakt-Panel: alle editierbaren Bodenkennwerte (dynamisch gerendert) -->
+          <div id="bk-compact-panel" style="margin-bottom:10px;"></div>
+          <!-- Versteckte Inputs für saveBodenkennwerte() -->
+          <input id="bk-me-wert"    type="hidden">
+          <input id="bk-phi-wert"   type="hidden">
+          <input id="bk-gamma-wert" type="hidden">
+          <input id="bk-c-wert"     type="hidden">
           <!-- Bemerkung Boden -->
           <div>
             <label style="font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:3px;">Bemerkung Baugrund</label>
@@ -8749,6 +8680,25 @@ function renderList() {
     tr.style.background = checked ? '#eff6ff' : '';
 
     const dynCells = cols.map(c => {
+      if (_listEditMode && isBPlist) {
+        if (c.key === 'fundtyp') {
+          return `<td onclick="event.stopPropagation()" style="padding:4px 8px;">
+            <select onchange="assignFundtypFromTable(${p.id},this.value)" id="list-ft-sel-${p.id}"
+              style="padding:3px 5px;border:1px solid #e5e7eb;border-radius:5px;font-size:11px;font-family:inherit;background:white;max-width:160px;">
+              ${_buildListFtOpts(p.id)}
+            </select></td>`;
+        }
+        if (c.key === 'neigung') {
+          const nv = bpData.neigung || '';
+          return `<td onclick="event.stopPropagation()" style="padding:4px 8px;">
+            <select onchange="saveListField(${p.id},'neigung',this.value)" style="padding:3px 5px;border:1px solid #e5e7eb;border-radius:5px;font-size:11px;font-family:inherit;background:white;">
+              <option value="" ${!nv?'selected':''}>—</option>
+              <option value="≤14°" ${nv==='≤14°'?'selected':''}>≤14°</option>
+              <option value="14–33°" ${nv==='14–33°'?'selected':''}>14–33°</option>
+              <option value=">33°" ${nv==='>33°'?'selected':''}>>33°</option>
+            </select></td>`;
+        }
+      }
       const clickAct = c.clickFn
         ? `${c.clickFn(p.id)};event.stopPropagation()`
         : `showDetail(${p.id})`;
@@ -8762,13 +8712,23 @@ function renderList() {
          </td>`
       : `<td onclick="showDetail(${p.id})" style="cursor:pointer"><strong>${p.bezeichnung || 'Standort '+p.id}</strong></td>`;
 
-    const massnahmeCell = isBPlist
-      ? `<td onclick="showDetail(${p.id})" style="cursor:pointer;padding:6px 10px;white-space:nowrap;">
+    const massnahmeCell = !isBPlist ? '' : _listEditMode
+      ? `<td onclick="event.stopPropagation()" style="padding:4px 8px;white-space:nowrap;">
+           <select onchange="saveListMassnahme(${p.id},this.value)" style="padding:3px 5px;border:1px solid #e5e7eb;border-radius:5px;font-size:11px;font-family:inherit;background:white;max-width:130px;">
+             <option value="">— Massnahme —</option>
+             <option value="neu|" ${(bpData.bestand==='neu'||(!bpData.bestand&&!bpData.massnahme)) ? 'selected':''}>Neubau</option>
+             <option value="prov|" ${bpData.bestand==='prov' ? 'selected':''}>Provisorium</option>
+             <option value="bestand|erhalten" ${bpData.bestand==='bestand'&&bpData.massnahme==='erhalten' ? 'selected':''}>Bestand erhalten</option>
+             <option value="bestand|sicherung" ${bpData.bestand==='bestand'&&bpData.massnahme==='sicherung' ? 'selected':''}>Sicherung</option>
+             <option value="bestand|abbruch" ${bpData.bestand==='bestand'&&bpData.massnahme==='abbruch' ? 'selected':''}>Abbruch + Neubau</option>
+             <option value="bestand|abbruch-nur" ${bpData.bestand==='bestand'&&bpData.massnahme==='abbruch-nur' ? 'selected':''}>Abbruch (nur)</option>
+           </select>
+         </td>`
+      : `<td onclick="showDetail(${p.id})" style="cursor:pointer;padding:6px 10px;white-space:nowrap;">
            ${massSet
              ? `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;background:${massCol}22;color:${massCol};border:1px solid ${massCol}44;">${massLbl}</span>`
              : `<span style="font-size:10px;color:#d1d5db;">—</span>`}
-         </td>`
-      : '';
+         </td>`;
 
     tr.innerHTML = `
       <td onclick="event.stopPropagation()"><input type="checkbox" class="row-cb" data-id="${p.id}" ${checked?'checked':''} onchange="toggleRowSelect(${p.id},this)"></td>
@@ -8789,6 +8749,66 @@ function renderList() {
     tbody.appendChild(tr);
   });
   updateBulkBar();
+}
+
+function _showListEditNotice(msg, isWarn) {
+  let el = document.getElementById('list-edit-notice');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'list-edit-notice';
+    el.style.cssText = 'position:fixed;bottom:76px;left:50%;transform:translateX(-50%);z-index:9999;padding:8px 18px;border-radius:8px;font-size:12px;font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,0.18);max-width:480px;text-align:center;pointer-events:none;transition:opacity 0.3s;';
+    document.body.appendChild(el);
+  }
+  el.style.background = isWarn ? '#fef3c7' : '#1a3a5c';
+  el.style.color      = isWarn ? '#92400e'  : 'white';
+  el.style.border     = isWarn ? '1px solid #fcd34d' : 'none';
+  el.textContent = msg;
+  el.style.opacity = '1';
+  el.style.display = 'block';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.opacity = '0'; setTimeout(() => { el.style.display = 'none'; }, 300); }, 3500);
+}
+
+function _listTargets(pairId) {
+  return (selectedIds.size > 1 && selectedIds.has(pairId)) ? [...selectedIds] : [pairId];
+}
+
+function saveListMassnahme(pairId, combined) {
+  if (!combined) return;
+  const [bestand, massnahme] = combined.split('|');
+  const all     = loadAllBauprojekt();
+  const targets = _listTargets(pairId);
+  targets.forEach(id => {
+    all[id] = { ...(all[id] || {}), bestand, massnahme: massnahme || '' };
+  });
+  saveAllBauprojekt(all);
+  if (targets.length > 1) _showListEditNotice(`${targets.length} Positionen aktualisiert`);
+  renderList();
+}
+
+function saveListField(pairId, key, value) {
+  const all     = loadAllBauprojekt();
+  const targets = _listTargets(pairId);
+  targets.forEach(id => {
+    all[id] = { ...(all[id] || {}), [key]: value };
+  });
+  saveAllBauprojekt(all);
+  if (targets.length > 1) _showListEditNotice(`${targets.length} Positionen aktualisiert`);
+  renderList();
+}
+function _buildListFtOpts(pairId) {
+  const typen     = loadFtProfile();
+  const zuws      = loadFtZuweisungen();
+  const assignedId= zuws[pairId] || '';
+  const typenStd  = typen.filter(t => t.typ === 'standard');
+  const typenSpez = typen.filter(t => t.typ !== 'standard');
+  const familien  = [...new Set(typenStd.map(t => t.name.split('/')[0].trim()))];
+  const assignedFam = assignedId && typenStd.find(t => t.id === assignedId)
+    ? typenStd.find(t => t.id === assignedId)?.name.split('/')[0].trim() : '';
+  let html = '<option value="">— kein Typ —</option>';
+  if (familien.length) html += `<optgroup label="── Standardtypen ──────">${familien.map(f => `<option value="__fam__${f}" ${assignedFam===f?'selected':''}>${f}</option>`).join('')}</optgroup>`;
+  if (typenSpez.length) html += `<optgroup label="── Spezial ─────────────">${typenSpez.map(t => `<option value="${t.id}" ${assignedId===t.id?'selected':''}>${_ftLabel(t)}</option>`).join('')}</optgroup>`;
+  return html;
 }
 
 function initOverviewMap() {
@@ -9160,6 +9180,7 @@ function exportFundamentliste() {
   const todayISO  = new Date().toISOString().split('T')[0];
   const bearb     = kenndaten.bearbeiter || '';
 
+  const ftByName = new Map(ftList.map(f => [f.name, f]));
   const aoa = [];
   // Zeile 1: Projektname + ISP + Stand
   aoa.push([titel, '', '', 'ISP:', kenndaten.isp || '', '', 'Stand:', todayDisp]);
@@ -9186,7 +9207,7 @@ function exportFundamentliste() {
   // Ab Zeile 18: Datenpositionen (1 Zeile pro Pair)
   PAIRS.forEach(p => {
     const bp       = allBP[p.id] || {};
-    const ft       = ftList.find(f => f.name === (bp.fundtyp || ''));
+    const ft       = ftByName.get(bp.fundtyp || '');
     const neigGrad = bp.neigung === '≤14°' ? 7 : bp.neigung === '14–33°' ? 23 : null;
     aoa.push([
       p.km_rs,                    // A:0  Km
@@ -9474,6 +9495,12 @@ function importExcel(input) {
   reader.readAsArrayBuffer(file);
 }
 
+// ── Hilfs-Konverter für Fundamentliste-Import ───────────────────────────────
+function _normFtName(s)     { return typeof s === 'string' ? s.replace(/\s*\/\s*/g, ' / ').trim() : ''; }
+function _toNeigLabel(deg)  { const d = parseFloat(deg); return isNaN(d) ? '' : d <= 14 ? '≤14°' : d <= 33 ? '14–33°' : '>33°'; }
+function _gwNumToEnum(v)    { if (v === null || v === '') return ''; const n = parseFloat(v); return isNaN(n) ? 'unbekannt' : (n > 0 ? 'angetroffen' : 'nicht_angetroffen'); }
+function _uscsToBodentyp(s) { return /^[GS]/i.test(String(s||'').trim()) ? 'grob' : 'fein'; }
+
 // ── Import aus SBB-Fundamentliste (xlsm/xlsx) ───────────────────────────────
 function importFundamentliste(input) {
   const file = input.files[0];
@@ -9491,8 +9518,7 @@ function _importFundamentlisteFromBuffer(buffer) {
     const wb = XLSX.read(buffer, { type: 'array' });
       // Primär "LISTE"-Sheet, Fallback auf erstes Sheet
       const wsName = wb.SheetNames.includes('LISTE') ? 'LISTE' : wb.SheetNames[0];
-      const ws = wb.Sheets[wsName];
-      // AOA-Modus: rows[i][j] = Zelle Zeile i+1, Spalte Buchstabe j
+      const ws   = wb.Sheets[wsName];
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
 
       // ── Projektmetadaten aus Zeilen 1–2 (Index 0–1) ──────────────
@@ -9511,21 +9537,11 @@ function _importFundamentlisteFromBuffer(buffer) {
       const ispVal   = findAfterLabel(rows[1], 'ISP')   || findAfterLabel(rows[0], 'ISP');
       const standVal = findAfterLabel(rows[1], 'Stand') || findAfterLabel(rows[0], 'Stand');
 
-      // FT-Namen normalisieren: "DP2a/2.0" → "DP2a / 2.0"
-      const normFt = s => typeof s === 'string' ? s.replace(/\s*\/\s*/g, ' / ').trim() : '';
-      // Neigungsgrad → Label; null/leer → leer (wird als "zu verifizieren" markiert)
-      const toNeigLabel = deg => {
-        const d = parseFloat(deg);
-        return isNaN(d) ? '' : d <= 14 ? '≤14°' : d <= 33 ? '14–33°' : '>33°';
-      };
-      // GWSP-Zahl aus Fundamentliste → Grundwasser-Enum
-      const gwNumToEnum = v => {
-        if (v === null || v === '') return '';
-        const n = parseFloat(v);
-        return isNaN(n) ? 'unbekannt' : (n > 0 ? 'angetroffen' : 'nicht_angetroffen');
-      };
-      // USCS-Kürzel → Bodentyp (fein/grob)
-      const uscsToBodentyp = s => /^[GS]/i.test(String(s||'').trim()) ? 'grob' : 'fein';
+      // Alias-Kurzformen für lesbarere Aufrufe weiter unten
+      const normFt         = _normFtName;
+      const toNeigLabel    = _toNeigLabel;
+      const gwNumToEnum    = _gwNumToEnum;
+      const uscsToBodentyp = _uscsToBodentyp;
 
       // ── Datenpositionen: Spalte A ist positive Dezimalzahl (km-Wert) ──
       const dataRows = rows.filter(r => r && r[0] !== null && !isNaN(parseFloat(r[0])) && parseFloat(r[0]) > 0);
@@ -9545,7 +9561,7 @@ function _importFundamentlisteFromBuffer(buffer) {
         // ── Geländeneigung ────────────────────────────────────────
         const neigRaw   = r[12];
         const neigLabel = toNeigLabel(neigRaw);
-        const noNeigung = neigRaw === null || neigRaw === '' || neigLabel === '';
+        const noNeigung = neigLabel === '';
 
         // ── Bodenkennwerte ────────────────────────────────────────
         const bkUscs  = r[13] != null ? String(r[13]).trim() : '';
@@ -9604,7 +9620,6 @@ function _importFundamentlisteFromBuffer(buffer) {
         };
       });
 
-      // FT-Zuweisungs-Map aufbauen
       const ftZuwNew = {};
       Object.entries(newBP).forEach(([id, bp]) => { if (bp.ftProfilId) ftZuwNew[id] = bp.ftProfilId; });
 
@@ -9618,18 +9633,17 @@ function _importFundamentlisteFromBuffer(buffer) {
         const k = [p.uscs||'', p.me||'', p.phi||'', p.gamma||'', p.c||'', p.grundwasser||''].join('§');
         if (!bgDedup[k]) bgDedup[k] = p.id;
       });
-      // tempId (1-basiert aus dataRows) → bgProfilId
       const tempToBgProfil = {};
       let newProfCount = 0;
+      const importTs = Date.now();
       Object.entries(newBP).forEach(([idStr, bp]) => {
-        // Zeile überspringen wenn keine Bodenwerte vorhanden (importVerify.boden gesetzt)
-        if (!bp.bkBodentyp && !bp.bkMe && !bp.bkPhi && !bp.bkGamma && !bp.bkC && !bp.bkGrundwasser) return;
+        if (bp.importVerify?.boden) return;
         const gwEnum = gwNumToEnum(bp.bkGrundwasser);
         const key = [bp.bkBodentyp, bp.bkMe, bp.bkPhi, bp.bkGamma, bp.bkC, gwEnum].join('§');
         let profilId = bgDedup[key];
         if (!profilId) {
           newProfCount++;
-          profilId = 'bg_imp_' + Date.now() + '_' + newProfCount;
+          profilId = 'bg_imp_' + importTs + '_' + newProfCount;
           const bodentyp = uscsToBodentyp(bp.bkBodentyp);
           newBgProfiles.push({
             id:          profilId,
@@ -9662,28 +9676,25 @@ function _importFundamentlisteFromBuffer(buffer) {
       // Baugrundprofile immer speichern (Deduplizierung berücksichtigt bestehende)
       if (newBgProfiles.length > existingBgProfiles.length) saveBgProfile(newBgProfiles);
 
-      let finalBgZuw = { ...loadBgZuweisungen() };
+      let finalBgZuw = {};
 
       if (replace) {
         PAIRS.length = 0;
         newPairs.forEach(p => PAIRS.push(p));
         saveAllBauprojekt(newBP);
         saveFtZuweisungen(ftZuwNew);
-        // BG-Zuweisungen für neue (ersetzte) Pairs aufbauen
-        finalBgZuw = {};
-        Object.entries(tempToBgProfil).forEach(([tmpId, bgId]) => {
-          finalBgZuw[tmpId] = bgId;
-        });
+        finalBgZuw = { ...tempToBgProfil };
       } else {
         const maxId  = PAIRS.length ? Math.max(...PAIRS.map(p => p.id)) : 0;
         const allBP  = loadAllBauprojekt();
         const allFtZ = loadFtZuweisungen();
+        finalBgZuw   = { ...loadBgZuweisungen() };
         newPairs.forEach((p, i) => {
           const nid = maxId + i + 1;
           PAIRS.push({ ...p, id: nid });
           allBP[nid]  = newBP[p.id];
-          if (ftZuwNew[p.id])           allFtZ[nid]    = ftZuwNew[p.id];
-          if (tempToBgProfil[p.id])     finalBgZuw[nid]= tempToBgProfil[p.id];
+          if (ftZuwNew[p.id])       allFtZ[nid]    = ftZuwNew[p.id];
+          if (tempToBgProfil[p.id]) finalBgZuw[nid]= tempToBgProfil[p.id];
         });
         saveAllBauprojekt(allBP);
         saveFtZuweisungen(allFtZ);
@@ -10064,6 +10075,17 @@ function renderTagAssignment() {
 // ============================================================
 let currentSort = 'default';
 let _listSortDir = 1; // 1 = aufsteigend, -1 = absteigend
+let _listEditMode = false;
+function toggleListEditMode() {
+  _listEditMode = !_listEditMode;
+  const btn = document.getElementById('list-edit-mode-btn');
+  if (btn) {
+    btn.style.background   = _listEditMode ? '#1a3a5c' : 'white';
+    btn.style.color        = _listEditMode ? 'white'   : '#374151';
+    btn.style.borderColor  = _listEditMode ? '#1a3a5c' : '#d1d5db';
+  }
+  renderList();
+}
 let activeTagFilter = null;
 
 function setSort(val) {
@@ -10482,8 +10504,6 @@ function initAppTabAllgemein() {
   const set = (id, val) => { const el = document.getElementById('up-' + id); if (el) el.value = val || ''; };
   set('name', p.name); set('firma', p.firma); set('email', p.email);
   set('tel',  p.tel);  set('mobile', p.mobile); set('adresse', p.adresse);
-  const el_pnr = document.getElementById('up-projektnummer');
-  if (el_pnr) el_pnr.value = p.projektnummer || '';
 }
 
 function initAppTabSidebar() {
@@ -10596,7 +10616,7 @@ function saveUserProfileData(p) { localStorage.setItem(USER_PROFILE_KEY, JSON.st
 
 function saveUserProfile() {
   const g = id => { const el = document.getElementById('up-' + id); return el ? el.value.trim() : ''; };
-  saveUserProfileData({ name: g('name'), firma: g('firma'), email: g('email'), tel: g('tel'), mobile: g('mobile'), adresse: g('adresse'), projektnummer: g('projektnummer') });
+  saveUserProfileData({ name: g('name'), firma: g('firma'), email: g('email'), tel: g('tel'), mobile: g('mobile'), adresse: g('adresse') });
   alert('✓ Profil gespeichert.');
 }
 
@@ -10712,11 +10732,272 @@ function openAppSettingsTab(tab) {
   document.querySelectorAll('.app-settings-panel').forEach(p => {
     p.style.display = p.dataset.panel === tab ? '' : 'none';
   });
+  // Breite anpassen für Parameterdatenbank-Tab
+  const inner = document.getElementById('app-settings-modal-inner');
+  if (inner) inner.style.width = tab === 'paramdb' ? 'min(98vw,820px)' : '520px';
   // Panel-spezifische Initialisierung
   if (tab === 'allgemein')   initAppTabAllgemein();
   if (tab === 'sidebar')     initAppTabSidebar();
   if (tab === 'phasen')      initAppTabPhasen();
   if (tab === 'vorlage')     renderAppSettingsModal();
+  if (tab === 'paramdb')     initAppTabParamdb();
+}
+
+// ── Parameterdatenbank in Einstellungen ──────────────────────────────────────
+
+const FT_GEO_OVERRIDE_KEY = 'sp_ft_geo_overrides';
+const FT_MAT_OVERRIDE_KEY = 'sp_ft_mat_overrides';
+
+function loadFtGeoOverrides()  { try { return JSON.parse(localStorage.getItem(FT_GEO_OVERRIDE_KEY)  || '{}'); } catch { return {}; } }
+function saveFtGeoOverrides(d) { localStorage.setItem(FT_GEO_OVERRIDE_KEY,  JSON.stringify(d)); }
+function loadFtMatOverrides()  { try { return JSON.parse(localStorage.getItem(FT_MAT_OVERRIDE_KEY) || '{}'); } catch { return {}; } }
+function saveFtMatOverrides(d) { localStorage.setItem(FT_MAT_OVERRIDE_KEY, JSON.stringify(d)); }
+
+let _paramdbEditMode = false;
+
+function initAppTabParamdb() {
+  _paramdbEditMode = false;
+  const btn = document.getElementById('paramdb-edit-mode-btn');
+  if (btn) { btn.style.background = 'white'; btn.style.color = '#374151'; btn.style.borderColor = '#d1d5db'; }
+  paramdbSubTab('geo');
+  renderParamdbTables();
+}
+
+function paramdbSubTab(tab) {
+  ['geo','mat'].forEach(t => {
+    const panel = document.getElementById('paramdb-panel-' + t);
+    const btn   = document.getElementById('paramdb-tab-' + t);
+    if (!panel || !btn) return;
+    const active = t === tab;
+    panel.style.display         = active ? '' : 'none';
+    btn.style.borderBottomColor = active ? '#2563eb' : 'transparent';
+    btn.style.color             = active ? '#2563eb' : '#6b7280';
+    btn.style.fontWeight        = active ? '700' : '600';
+  });
+}
+
+function toggleParamdbEditMode() {
+  _paramdbEditMode = !_paramdbEditMode;
+  const btn = document.getElementById('paramdb-edit-mode-btn');
+  if (btn) {
+    btn.style.background  = _paramdbEditMode ? '#1a3a5c' : 'white';
+    btn.style.color       = _paramdbEditMode ? 'white'   : '#374151';
+    btn.style.borderColor = _paramdbEditMode ? '#1a3a5c' : '#d1d5db';
+  }
+  renderParamdbTables();
+}
+
+function renderParamdbTables() {
+  renderParamdbGeo();
+  renderParamdbMat();
+}
+
+function renderParamdbGeo() {
+  const body = document.getElementById('paramdb-geo-body');
+  if (!body) return;
+  const types  = DEFAULT_FT_PROFIL.filter(t => t.typ === 'standard');
+  const geoOv  = loadFtGeoOverrides();
+  const stored = loadFtProfile();
+  const tdS    = 'padding:6px 8px;white-space:nowrap;border-bottom:1px solid #f3f4f6;font-size:11px;';
+  const inpS   = 'padding:2px 4px;border:1px solid #d1d5db;border-radius:4px;font-size:11px;';
+  const rowBg  = i => i % 2 === 0 ? '#ffffff' : '#f8fafc';
+
+  body.innerHTML = types.map((t, i) => {
+    const ov       = geoOv[t.id] || {};
+    const effName  = (stored.find(s => s.id === t.id)?.name) || ov.name || t.name;
+    const kopfH    = parseFloat(ov.kopfHoehe    ?? t.kopfHoehe)  || 1.0;
+    const tiefe    = parseFloat(ov.tiefe        ?? t.tiefe)       || 0;
+    const blockAbm = ov.blockAbmessung != null ? ov.blockAbmessung : t.blockAbmessung;
+    const blockB   = _ftParseBlockM(blockAbm);
+    const blockH   = tiefe - kopfH;
+    let volStr = '—';
+    if (blockB && blockH > 0) {
+      const volKopf  = (0.36 * kopfH).toFixed(2);
+      const volBlock = (blockB * blockB * blockH).toFixed(2);
+      volStr = `${(+volKopf + +volBlock).toFixed(2)} m³`;
+    }
+
+    if (_paramdbEditMode) {
+      const blockVal = (blockAbm && blockAbm !== '—') ? blockAbm : '';
+      return `<tr style="background:${rowBg(i)};">
+        <td style="${tdS}"><input type="text" value="${effName.replace(/"/g,'&quot;')}" onchange="saveParamdbGeoField('${t.id}','name',this.value)" onblur="renderParamdbGeo()" style="width:130px;${inpS}font-weight:700;color:#1a3a5c;"></td>
+        <td style="${tdS}color:#9ca3af;">0.60×0.60 m</td>
+        <td style="${tdS}"><input type="number" step="0.01" min="0" value="${kopfH.toFixed(2)}" onchange="saveParamdbGeoField('${t.id}','kopfHoehe',this.value)" onblur="renderParamdbGeo()" style="width:60px;${inpS}"></td>
+        <td style="${tdS}"><input type="text" value="${blockVal}" placeholder="z.B. 850×850 mm" onchange="saveParamdbGeoField('${t.id}','blockAbmessung',this.value||'—')" onblur="renderParamdbGeo()" style="width:120px;${inpS}"></td>
+        <td style="${tdS}"><input type="number" step="0.01" min="0" value="${tiefe.toFixed(2)}" onchange="saveParamdbGeoField('${t.id}','tiefe',this.value)" onblur="renderParamdbGeo()" style="width:60px;${inpS}"></td>
+        <td style="${tdS}color:#6b7280;">${volStr}</td>
+      </tr>`;
+    } else {
+      const blockTxt = (!blockAbm || blockAbm === '—')
+        ? `<span style="color:#d97706;font-weight:600;">— ausstehend</span>`
+        : mmAbmessungToM(blockAbm);
+      return `<tr style="background:${rowBg(i)};">
+        <td style="${tdS}font-weight:700;color:#1a3a5c;">${effName}</td>
+        <td style="${tdS}">0.60×0.60 m</td>
+        <td style="${tdS}">${kopfH.toFixed(2)} m</td>
+        <td style="${tdS}">${blockTxt}</td>
+        <td style="${tdS}">${tiefe.toFixed(2)} m</td>
+        <td style="${tdS}">${volStr}</td>
+      </tr>`;
+    }
+  }).join('');
+}
+
+function renderParamdbMat() {
+  const body = document.getElementById('paramdb-mat-body');
+  if (!body) return;
+  const types = DEFAULT_FT_PROFIL.filter(t => t.typ === 'standard');
+  const matOv = loadFtMatOverrides();
+  const tdS = 'padding:6px 8px;border-bottom:1px solid #f3f4f6;font-size:11px;';
+  const rowBg = i => i % 2 === 0 ? '#ffffff' : '#f8fafc';
+
+  body.innerHTML = types.map((t, i) => {
+    const base = FT_MATERIAL_DB[t.id] || {};
+    const ov   = matOv[t.id] || {};
+    const m    = { ...base, ...ov };
+
+    if (_paramdbEditMode) {
+      const inp = (field, ph) =>
+        `<input type="text" value="${(m[field]||'').replace(/"/g,'&quot;')}" placeholder="${ph}"
+          onchange="saveParamdbMatField('${t.id}','${field}',this.value)"
+          style="width:100%;min-width:90px;padding:2px 4px;border:1px solid #d1d5db;border-radius:4px;font-size:10px;">`;
+      return `<tr style="background:${rowBg(i)};">
+        <td style="${tdS}font-weight:700;color:#1a3a5c;white-space:nowrap;">${t.name}</td>
+        <td style="${tdS}">${inp('beton','C30/37')}</td>
+        <td style="${tdS}">${inp('deckung','40 mm')}</td>
+        <td style="${tdS}">${inp('stahl','B500B')}</td>
+        <td style="${tdS}">${inp('laengs','4 Ø 16 mm')}</td>
+        <td style="${tdS}">${inp('quer','2×Ø10/...')}</td>
+        <td style="${tdS}">${inp('anker','4×M30,...')}</td>
+      </tr>`;
+    } else {
+      return `<tr style="background:${rowBg(i)};">
+        <td style="${tdS}font-weight:700;color:#1a3a5c;white-space:nowrap;">${t.name}</td>
+        <td style="${tdS}white-space:nowrap;">${m.beton  || '<span style="color:#9ca3af;">gem. Dok.</span>'}</td>
+        <td style="${tdS}white-space:nowrap;">${m.deckung|| '<span style="color:#9ca3af;">gem. Dok.</span>'}</td>
+        <td style="${tdS}white-space:nowrap;">${m.stahl  || '<span style="color:#9ca3af;">gem. Dok.</span>'}</td>
+        <td style="${tdS}white-space:nowrap;">${m.laengs || '<span style="color:#9ca3af;">gem. Dok.</span>'}</td>
+        <td style="${tdS}white-space:nowrap;">${m.quer   || '<span style="color:#9ca3af;">gem. Dok.</span>'}</td>
+        <td style="${tdS}white-space:nowrap;">${m.anker  || '<span style="color:#9ca3af;">gem. Dok.</span>'}</td>
+      </tr>`;
+    }
+  }).join('');
+}
+
+function saveParamdbGeoField(id, field, value) {
+  const ov = loadFtGeoOverrides();
+  ov[id] = ov[id] || {};
+  ov[id][field] = value;
+  saveFtGeoOverrides(ov);
+
+  if (field === 'name' && value) {
+    // FT-Profil-Liste im localStorage umbenennen
+    const list = loadFtProfile();
+    const entry = list.find(t => t.id === id);
+    if (entry) { entry.name = value; saveFtProfile(list); }
+
+    // Alle Bauprojekt-Records mit ftProfilId === id aktualisieren
+    const all = loadAllBauprojekt();
+    let changed = false;
+    Object.keys(all).forEach(k => {
+      if (all[k].ftProfilId === id) { all[k].fundtyp = value; changed = true; }
+    });
+    if (changed) saveAllBauprojekt(all);
+  }
+}
+
+function saveParamdbMatField(id, field, value) {
+  const ov = loadFtMatOverrides();
+  ov[id] = ov[id] || {};
+  ov[id][field] = value;
+  saveFtMatOverrides(ov);
+}
+
+function exportParamdbExcel() {
+  const types = DEFAULT_FT_PROFIL.filter(t => t.typ === 'standard');
+  const geoOv = loadFtGeoOverrides();
+  const matOv = loadFtMatOverrides();
+
+  const geoRows = [['Typ','Hangneigung','Kopf h (m)','Block b×b (mm)','Tiefe t (m)']];
+  types.forEach(t => {
+    const ov = geoOv[t.id] || {};
+    geoRows.push([
+      t.name,
+      t.einsatzBedingung,
+      parseFloat(ov.kopfHoehe ?? t.kopfHoehe) || '',
+      ov.blockAbmessung != null ? ov.blockAbmessung : t.blockAbmessung,
+      parseFloat(ov.tiefe ?? t.tiefe) || ''
+    ]);
+  });
+
+  const matRows = [['Typ','Beton','Betondeckung','Bewehrungsstahl','Längsbewehrung','Querbewehrung','Ankerbolzen']];
+  types.forEach(t => {
+    const m = { ...FT_MATERIAL_DB[t.id] || {}, ...matOv[t.id] || {} };
+    matRows.push([t.name, m.beton||'', m.deckung||'', m.stahl||'', m.laengs||'', m.quer||'', m.anker||'']);
+  });
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(geoRows),  'Geometrie');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(matRows),  'Material_Bewehrung');
+  XLSX.writeFile(wb, 'Parameterdatenbank_FL.xlsx');
+}
+
+function importParamdbExcel(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'binary' });
+
+      const geoSheet = wb.Sheets['Geometrie'];
+      if (geoSheet) {
+        const rows = XLSX.utils.sheet_to_json(geoSheet, { header: 1 });
+        const ov   = loadFtGeoOverrides();
+        rows.slice(1).forEach(row => {
+          const t = DEFAULT_FT_PROFIL.find(x => x.name === row[0] && x.typ === 'standard');
+          if (!t) return;
+          ov[t.id] = ov[t.id] || {};
+          if (row[2] != null && row[2] !== '') ov[t.id].kopfHoehe      = String(row[2]);
+          if (row[3] != null && row[3] !== '') ov[t.id].blockAbmessung = String(row[3]);
+          if (row[4] != null && row[4] !== '') ov[t.id].tiefe          = String(row[4]);
+        });
+        saveFtGeoOverrides(ov);
+      }
+
+      const matSheet = wb.Sheets['Material_Bewehrung'];
+      if (matSheet) {
+        const rows = XLSX.utils.sheet_to_json(matSheet, { header: 1 });
+        const ov   = loadFtMatOverrides();
+        rows.slice(1).forEach(row => {
+          const t = DEFAULT_FT_PROFIL.find(x => x.name === row[0] && x.typ === 'standard');
+          if (!t) return;
+          ov[t.id] = ov[t.id] || {};
+          if (row[1] != null && row[1] !== '') ov[t.id].beton   = String(row[1]);
+          if (row[2] != null && row[2] !== '') ov[t.id].deckung = String(row[2]);
+          if (row[3] != null && row[3] !== '') ov[t.id].stahl   = String(row[3]);
+          if (row[4] != null && row[4] !== '') ov[t.id].laengs  = String(row[4]);
+          if (row[5] != null && row[5] !== '') ov[t.id].quer    = String(row[5]);
+          if (row[6] != null && row[6] !== '') ov[t.id].anker   = String(row[6]);
+        });
+        saveFtMatOverrides(ov);
+      }
+
+      renderParamdbTables();
+      alert('Import erfolgreich!');
+    } catch (err) {
+      alert('Fehler beim Import: ' + err.message);
+    }
+    input.value = '';
+  };
+  reader.readAsBinaryString(file);
+}
+
+function resetParamdbOverrides() {
+  if (!confirm('Alle lokalen Anpassungen der Parameterdatenbank zurücksetzen?\n\nDie Original-Standardwerte werden wiederhergestellt.')) return;
+  localStorage.removeItem(FT_GEO_OVERRIDE_KEY);
+  localStorage.removeItem(FT_MAT_OVERRIDE_KEY);
+  renderParamdbTables();
 }
 
 function deleteProject(id) {
@@ -14173,6 +14454,15 @@ function resolveFtByFamilieNeigung(family, neigung, tiefe) {
   return opts.find(t => t.beton && t.beton !== 'gem. Dok.') || opts[0];
 }
 
+function onBpFtBearbeitenClick() {
+  const name = document.getElementById('bp-fundtyp')?.value || '';
+  if (!name) { openFtDatenbank(); return; }
+  const ft = loadFtProfile().find(t => t.name === name);
+  if (!ft) return;
+  if (ft.typ === 'standard') openFtDatenbank();
+  else openFundtypProfilModal(ft.id);
+}
+
 // Befüllt #bp-ft-familie; stellt gespeicherten Wert wieder her
 function refreshBpFamilieSelect(savedFundtyp) {
   seedDefaultFtProfile();
@@ -14294,7 +14584,7 @@ function renderBpFtInfo() {
   }
 
   // Hilfsfunktionen
-  const m2 = v => (v != null && v !== '' && !isNaN(parseFloat(v))) ? parseFloat(v).toFixed(2) : null;
+  const m2 = v => (v != null && v !== '' && v !== 'null' && !isNaN(parseFloat(v))) ? parseFloat(v).toFixed(2) : null;
   const mmStr2m = str => str ? str
     .replace(/(\d+(?:\.\d+)?)×(\d+(?:\.\d+)?)\s*mm/g, (_, a, b) => `${(+a/1000).toFixed(2)}×${(+b/1000).toFixed(2)} m`)
     .replace(/(\d+(?:\.\d+)?)\s*mm/g, (_, a) => `${(+a/1000).toFixed(2)} m`) : str;
@@ -14304,23 +14594,29 @@ function renderBpFtInfo() {
     <span style="font-size:11px;font-weight:600;color:#374151;">${val}</span>
   </div>` : '';
 
-  const artLabel = { einzelpfahl:'Einzelpfahl', mehrpfahl:'Mehrpfahl', direktgr:'Direktgründung', sonstige:'Sonstige' }[ft.fundamentArt] || ft.fundamentArt || '';
+  const ART_LABELS = { blockfundament:'Blockfundament', einzelpfahl:'Einzelpfahl', mehrpfahl:'Mehrpfahlfundament', direktgr:'Direktgründung', fels:'Verankerung in Fels', mauer:'Befestigung an Mauer', bauwerk:'Befestigung an Bauwerk', sonstige:'Sonstige' };
+  const artLabel = ART_LABELS[ft.fundamentArt] || (ft.fundamentArt ? ft.fundamentArt.charAt(0).toUpperCase() + ft.fundamentArt.slice(1) : '');
 
   // Kopf-Abmessungen
   let kopf = '';
   if (ft.kopfB != null) {
-    kopf = ft.kopfL != null && ft.kopfL !== ft.kopfB
-      ? `${m2(ft.kopfB)}×${m2(ft.kopfL)} m`
-      : `${m2(ft.kopfB)} m`;
-    if (ft.kopfHoehe) kopf += ` · h = ${m2(ft.kopfHoehe)} m`;
+    const bStr = m2(ft.kopfB);
+    if (bStr) {
+      const lStr = (ft.kopfL != null && ft.kopfL !== ft.kopfB) ? m2(ft.kopfL) : null;
+      kopf = lStr ? `${bStr}×${lStr} m` : `${bStr} m`;
+      const hStr = m2(ft.kopfHoehe);
+      if (hStr) kopf += ` · h = ${hStr} m`;
+    }
   } else if (ft.kopfAbmessung) { kopf = mmStr2m(ft.kopfAbmessung); }
 
   // Block-Abmessungen
   let block = '';
   if (ft.blockB != null) {
-    block = ft.blockL != null && ft.blockL !== ft.blockB
-      ? `${m2(ft.blockB)}×${m2(ft.blockL)} m`
-      : `${m2(ft.blockB)} m`;
+    const bStr = m2(ft.blockB);
+    if (bStr) {
+      const lStr = (ft.blockL != null && ft.blockL !== ft.blockB) ? m2(ft.blockL) : null;
+      block = lStr ? `${bStr}×${lStr} m` : `${bStr} m`;
+    }
   } else if (ft.blockAbmessung && ft.blockAbmessung !== '—') { block = mmStr2m(ft.blockAbmessung); }
 
   // Pfahl-Info
@@ -14357,14 +14653,8 @@ function renderBpFtInfo() {
   const vfkVisible = ft?.typ === 'standard';
   wrap.innerHTML = rows ? `
     <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:${vfkVisible ? '7px 7px 0 0' : '7px'};padding:8px 10px;margin-bottom:0;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <div style="margin-bottom:6px;">
         <span style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.04em;">Aus Bibliothek</span>
-        ${ft.typ !== 'standard'
-          ? `<button onclick="openFundtypProfilModal('${ft.id}')" style="font-size:10px;font-weight:600;color:#1a3a5c;background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;gap:3px;">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              Bearbeiten
-            </button>`
-          : ''}
       </div>
       ${rows}
     </div>` : '';
@@ -14394,7 +14684,7 @@ function loadBauprojektFelder(pairId) {
   v('bk-phi-wert',         d.bkPhi);
   v('bk-gamma-wert',       d.bkGamma || '');
   v('bk-c-wert',           d.bkC     || '');
-  v('bk-grundwasser',      d.bkGrundwasser);
+  _bkGrundwasser = d.bkGrundwasser || '';
   v('bk-bemerkung',        d.bkBemerkung);
   setBkBodentyp(d.bkBodentyp || 'fein', false);
   // Ausführungsplanung
@@ -14468,7 +14758,7 @@ function saveBodenkennwerte() {
     bkPhi:         v('bk-phi-wert'),
     bkGamma:       v('bk-gamma-wert'),
     bkC:           v('bk-c-wert'),
-    bkGrundwasser: v('bk-grundwasser'),
+    bkGrundwasser: _bkGrundwasser,
     bkBemerkung:   v('bk-bemerkung'),
   };
   saveAllBauprojekt(all);
@@ -14598,7 +14888,8 @@ function showBpFtWarn() {
 }
 
 // ── Bodenkennwerte UI ────────────────────────────────────────
-let _bkBodentyp = 'fein';
+let _bkBodentyp   = 'fein';
+let _bkGrundwasser = '';
 
 // Grenzwerte gem. 0161.1011.0010
 const BK_GRENZWERTE = {
@@ -14608,78 +14899,190 @@ const BK_GRENZWERTE = {
 
 function setBkBodentyp(typ, save = true) {
   _bkBodentyp = typ;
-  const isFein = typ === 'fein';
-  const btnFein = document.getElementById('bk-btn-fein');
-  const btnGrob = document.getElementById('bk-btn-grob');
-  if (btnFein) {
-    btnFein.style.cssText = isFein
-      ? 'flex:1;padding:6px;border-radius:6px;border:2px solid #374151;background:#f3f4f6;color:#374151;font-size:11px;font-weight:700;cursor:pointer;'
-      : 'flex:1;padding:6px;border-radius:6px;border:2px solid #e5e7eb;background:white;color:#6b7280;font-size:11px;font-weight:700;cursor:pointer;';
-  }
-  if (btnGrob) {
-    btnGrob.style.cssText = !isFein
-      ? 'flex:1;padding:6px;border-radius:6px;border:2px solid #374151;background:#f3f4f6;color:#374151;font-size:11px;font-weight:700;cursor:pointer;'
-      : 'flex:1;padding:6px;border-radius:6px;border:2px solid #e5e7eb;background:white;color:#6b7280;font-size:11px;font-weight:700;cursor:pointer;';
-  }
-  const hinweis = document.getElementById('bk-bodentyp-hinweis');
-  if (hinweis) hinweis.textContent = isFein
-    ? 'Feinkörnig: CL, ML, CM, CH, MH (gem. USCS)'
-    : 'Grobkörnig: GW, GP, GM, GC, SW, SP, SM, SC (gem. USCS)';
-  const meGrenz = document.getElementById('bk-me-grenzwert');
-  if (meGrenz) meGrenz.innerHTML = `ME ≥ <strong>${BK_GRENZWERTE[typ].me} MPa</strong> (${typ === 'fein' ? 'feinkörnig' : 'grobkörnig'})`;
   if (save) { saveBodenkennwerte(); updateBodenkennwerteUI(); }
 }
 
 function updateBodenkennwerteUI() {
-  // Zeige Bodenkennwerte-Sektion nur im Bauprojekt
   const sec = document.getElementById('sec-bodenkennwerte');
   if (sec) sec.style.display = _activePhase === 'bauprojekt' ? '' : 'none';
 
-  const grenz = BK_GRENZWERTE[_bkBodentyp] || BK_GRENZWERTE.fein;
+  const grenz  = BK_GRENZWERTE[_bkBodentyp] || BK_GRENZWERTE.fein;
+  const meVal  = parseFloat(document.getElementById('bk-me-wert')?.value);
+  const phiVal = parseFloat(document.getElementById('bk-phi-wert')?.value);
+  const meOk   = !isNaN(meVal)  && meVal  >= grenz.me;
+  const phiOk  = !isNaN(phiVal) && phiVal >= 27;
   const results = [];
-
-  // ME-Wert beurteilen
-  const meVal = parseFloat(document.getElementById('bk-me-wert')?.value);
-  const meOk  = !isNaN(meVal) && meVal >= grenz.me;
-  const meNok = !isNaN(meVal) && meVal < grenz.me;
-  setKennwertStatus('bk-me-status', 'bk-me-hinweis', meVal,
-    meOk, meNok,
-    `Erfüllt (${meVal} ≥ ${grenz.me} MPa)`,
-    `Nicht erfüllt (${meVal} < ${grenz.me} MPa) — Spezial prüfen`);
-  if (!isNaN(meVal)) results.push(meOk);
-
-  // Reibungswinkel φ'k beurteilen
-  const phiVal   = parseFloat(document.getElementById('bk-phi-wert')?.value);
-  const phiMin   = 27;
-  const phiOk    = !isNaN(phiVal) && phiVal >= phiMin;
-  const phiNok   = !isNaN(phiVal) && phiVal < phiMin;
-  setKennwertStatus('bk-phi-status', 'bk-phi-hinweis', phiVal,
-    phiOk, phiNok,
-    `Erfüllt (${phiVal}° ≥ ${phiMin}°)`,
-    `Nicht erfüllt (${phiVal}° < ${phiMin}°) — Spezial prüfen`);
+  if (!isNaN(meVal))  results.push(meOk);
   if (!isNaN(phiVal)) results.push(phiOk);
+  if (_bkGrundwasser && _bkGrundwasser !== 'unbekannt') results.push(true);
 
-  const dot = (ok) => `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${ok ? '#16a34a' : '#dc2626'};margin-left:4px;flex-shrink:0;"></span>`;
-
-  // Grundwasser — nur dokumentiert, kein Pass/Fail
-  const gwVal = document.getElementById('bk-grundwasser')?.value;
-  const gwEl  = document.getElementById('bk-gw-status');
-  if (gwEl) {
-    const gwColor = gwVal === 'nicht_angetroffen' ? '#16a34a' : gwVal === 'angetroffen' || gwVal === 'gespannt' ? '#f59e0b' : '';
-    gwEl.innerHTML = gwColor ? `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${gwColor};margin-left:4px;flex-shrink:0;"></span>` : '';
-  }
-  if (gwVal && gwVal !== 'unbekannt') results.push(true); // GW fliesst nicht mehr in Pass/Fail ein
-
-  // Gesamturteil
   const urteilEl = document.getElementById('bk-gesamturteil');
-  if (urteilEl && results.length > 0) {
-    const allOk = results.every(r => r);
-    urteilEl.textContent = allOk ? 'Erfüllt' : 'Nicht erfüllt';
-    urteilEl.style.background = allOk ? '#dcfce7' : '#fee2e2';
-    urteilEl.style.color      = allOk ? '#166534' : '#b91c1c';
-  } else if (urteilEl) {
-    urteilEl.textContent = '';
+  if (urteilEl) {
+    if (results.length > 0) {
+      const allOk = results.every(r => r);
+      urteilEl.textContent = allOk ? 'Erfüllt' : 'Nicht erfüllt';
+      urteilEl.style.background = allOk ? '#dcfce7' : '#fee2e2';
+      urteilEl.style.color      = allOk ? '#166534' : '#b91c1c';
+    } else {
+      urteilEl.textContent = '';
+    }
   }
+
+  const panel = document.getElementById('bk-compact-panel');
+  if (!panel) return;
+
+  const meRaw    = document.getElementById('bk-me-wert')?.value    || '';
+  const phiRaw   = document.getElementById('bk-phi-wert')?.value   || '';
+  const gammaRaw = document.getElementById('bk-gamma-wert')?.value || '';
+  const cRaw     = document.getElementById('bk-c-wert')?.value     || '';
+  const meNum    = parseFloat(meRaw);
+  const phiNum   = parseFloat(phiRaw);
+  const meOk2    = !isNaN(meNum)  && meNum  >= grenz.me;
+  const phiOk2   = !isNaN(phiNum) && phiNum >= 27;
+  const isFein   = _bkBodentyp !== 'grob';
+
+  const dot  = ok => `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${ok?'#16a34a':'#dc2626'};flex-shrink:0;margin-left:2px;"></span>`;
+  const rowS = 'display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid #f0f2f5;';
+  const lblS = 'font-size:10px;color:#9ca3af;min-width:84px;flex-shrink:0;';
+  const valS = 'font-size:11px;color:#374151;font-weight:500;flex:1;';
+  const unitS= 'font-size:10px;color:#9ca3af;flex-shrink:0;';
+  const hint = (ok, txt) => `<div style="font-size:10px;color:${ok?'#9ca3af':'#b91c1c'};padding:1px 0 2px 90px;">${txt}</div>`;
+
+  const gwLabels = { nicht_angetroffen:'Nicht angetroffen', angetroffen:'Angetroffen', gespannt:'Gespannt', unbekannt:'Unbekannt' };
+  const gwLabel  = _bkGrundwasser ? (gwLabels[_bkGrundwasser] || _bkGrundwasser) : '—';
+
+  panel.innerHTML = `
+    <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:7px;padding:8px 10px;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+        <span style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.04em;">Bodenkennwerte</span>
+        <span style="font-size:10px;font-weight:600;padding:1px 7px;border-radius:10px;background:${isFein?'#eff6ff':'#fef9c3'};color:${isFein?'#2563eb':'#854d0e'};">${isFein?'Feinkörnig':'Grobkörnig'}</span>
+      </div>
+      <div style="font-size:10px;color:#9ca3af;margin-bottom:6px;">${isFein?'CL, ML, CM, CH, MH (USCS)':'GW, GP, GM, GC, SW, SP, SM, SC (USCS)'}</div>
+
+      <div style="${rowS}">
+        <span style="${lblS}">ME-Wert</span>
+        <span style="${valS}">${meRaw || '—'}${meRaw ? '<span style="font-size:10px;color:#9ca3af;margin-left:3px;">MPa</span>' : ''}</span>
+        ${!isNaN(meNum) ? dot(meOk2) : ''}
+      </div>
+      ${!isNaN(meNum) ? hint(meOk2, meOk2 ? `Erfüllt (${meNum} ≥ ${grenz.me} MPa)` : `Nicht erfüllt (${meNum} < ${grenz.me} MPa)`) : ''}
+
+      <div style="${rowS}">
+        <span style="${lblS}">φ'k</span>
+        <span style="${valS}">${phiRaw || '—'}${phiRaw ? '<span style="font-size:10px;color:#9ca3af;margin-left:2px;">°</span>' : ''}</span>
+        ${!isNaN(phiNum) ? dot(phiOk2) : ''}
+      </div>
+      ${!isNaN(phiNum) ? hint(phiOk2, phiOk2 ? `Erfüllt (${phiNum}° ≥ 27°)` : `Nicht erfüllt (${phiNum}° < 27°)`) : ''}
+
+      <div style="${rowS}">
+        <span style="${lblS}">Raumlast γ'k</span>
+        <span style="${valS}">${gammaRaw || '—'}${gammaRaw ? '<span style="font-size:10px;color:#9ca3af;margin-left:3px;">kN/m³</span>' : ''}</span>
+      </div>
+
+      <div style="${rowS}">
+        <span style="${lblS}">Kohäsion c'k</span>
+        <span style="${valS}">${cRaw || '—'}${cRaw ? '<span style="font-size:10px;color:#9ca3af;margin-left:3px;">kPa</span>' : ''}</span>
+      </div>
+
+      <div style="${rowS}border-bottom:none;">
+        <span style="${lblS}">Grundwasser</span>
+        <span style="${valS}">${gwLabel}</span>
+      </div>
+
+      <div style="margin-top:7px;padding-top:6px;border-top:1px solid #f0f2f5;font-size:10px;color:#6b7280;line-height:1.7;">
+        <div style="font-weight:700;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:1px;">Grenzwerte (gem. 0161.1011.0010)</div>
+        <div>φ'k ≥ <strong>27°</strong> &nbsp;·&nbsp; ME ≥ <strong>${grenz.me} MPa</strong> (${isFein?'feinkörnig':'grobkörnig'})</div>
+        <div>Grundwasser: <strong>unterhalb Fundament</strong> &nbsp;·&nbsp; Neigung: <strong>≤ 33°</strong></div>
+      </div>
+    </div>`;
+}
+
+function openBodenkennwerteModal() {
+  if (!currentPairId) return;
+  const existing = document.getElementById('bk-edit-modal');
+  if (existing) existing.remove();
+
+  const grenz    = BK_GRENZWERTE[_bkBodentyp] || BK_GRENZWERTE.fein;
+  const meRaw    = document.getElementById('bk-me-wert')?.value    || '';
+  const phiRaw   = document.getElementById('bk-phi-wert')?.value   || '';
+  const gammaRaw = document.getElementById('bk-gamma-wert')?.value || '';
+  const cRaw     = document.getElementById('bk-c-wert')?.value     || '';
+  const isFein   = _bkBodentyp !== 'grob';
+
+  const gwOpts = [['','— ausstehend —'],['nicht_angetroffen','Nicht angetroffen'],['angetroffen','Angetroffen'],['gespannt','Gespannt'],['unbekannt','Unbekannt']]
+    .map(([v,l]) => `<option value="${v}"${_bkGrundwasser===v?' selected':''}>${l}</option>`).join('');
+
+  const inpS = 'width:100%;padding:6px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;font-family:inherit;box-sizing:border-box;';
+
+  const overlay = document.createElement('div');
+  overlay.id = 'bk-edit-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:10000;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:white;border-radius:10px;padding:22px;width:340px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <h3 style="margin:0;font-size:14px;font-weight:700;color:#1a3a5c;">Bodenkennwerte bearbeiten</h3>
+        <button onclick="document.getElementById('bk-edit-modal').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:#6b7280;padding:0;line-height:1;">×</button>
+      </div>
+
+      <div style="margin-bottom:14px;">
+        <label style="font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:5px;">Bodentyp</label>
+        <div style="display:flex;gap:4px;">
+          <button id="bk-modal-btn-fein" onclick="bkModalSetBodentyp('fein')" style="flex:1;padding:5px;border-radius:5px;border:1px solid ${isFein?'#1a3a5c':'#e5e7eb'};background:${isFein?'#1a3a5c':'white'};color:${isFein?'white':'#6b7280'};font-size:11px;font-weight:600;cursor:pointer;">Feinkörnig</button>
+          <button id="bk-modal-btn-grob" onclick="bkModalSetBodentyp('grob')" style="flex:1;padding:5px;border-radius:5px;border:1px solid ${!isFein?'#1a3a5c':'#e5e7eb'};background:${!isFein?'#1a3a5c':'white'};color:${!isFein?'white':'#6b7280'};font-size:11px;font-weight:600;cursor:pointer;">Grobkörnig</button>
+        </div>
+      </div>
+
+      <div style="display:grid;gap:10px;margin-bottom:18px;">
+        <div>
+          <label style="font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:3px;">ME-Wert (MPa)</label>
+          <input id="bk-modal-me" type="number" step="0.5" min="0" value="${meRaw}" placeholder="—" style="${inpS}">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:3px;">φ'k (°)</label>
+          <input id="bk-modal-phi" type="number" step="0.5" min="0" max="45" value="${phiRaw}" placeholder="—" style="${inpS}">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:3px;">Raumlast γ'k (kN/m³)</label>
+          <input id="bk-modal-gamma" type="number" step="0.5" min="0" value="${gammaRaw}" placeholder="—" style="${inpS}">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:3px;">Kohäsion c'k (kPa)</label>
+          <input id="bk-modal-c" type="number" step="0.5" min="0" value="${cRaw}" placeholder="—" style="${inpS}">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:600;color:#374151;display:block;margin-bottom:3px;">Grundwasser</label>
+          <select id="bk-modal-gw" style="${inpS}background:white;">${gwOpts}</select>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button onclick="document.getElementById('bk-edit-modal').remove()" style="padding:7px 16px;border-radius:6px;border:1px solid #e5e7eb;background:white;color:#374151;cursor:pointer;font-size:12px;font-weight:600;">Abbrechen</button>
+        <button onclick="saveBodenkennwerteModal()" style="padding:7px 16px;border-radius:6px;border:none;background:#1a3a5c;color:white;cursor:pointer;font-size:12px;font-weight:600;">Speichern</button>
+      </div>
+    </div>`;
+
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+function bkModalSetBodentyp(typ) {
+  _bkBodentyp = typ;
+  const isFein = typ !== 'grob';
+  const btnFein = document.getElementById('bk-modal-btn-fein');
+  const btnGrob = document.getElementById('bk-modal-btn-grob');
+  if (btnFein) { btnFein.style.cssText += `;background:${isFein?'#1a3a5c':'white'};color:${isFein?'white':'#6b7280'};border:1px solid ${isFein?'#1a3a5c':'#e5e7eb'};`; }
+  if (btnGrob) { btnGrob.style.cssText += `;background:${!isFein?'#1a3a5c':'white'};color:${!isFein?'white':'#6b7280'};border:1px solid ${!isFein?'#1a3a5c':'#e5e7eb'};`; }
+}
+
+function saveBodenkennwerteModal() {
+  const sv = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+  sv('bk-me-wert',    document.getElementById('bk-modal-me')?.value    || '');
+  sv('bk-phi-wert',   document.getElementById('bk-modal-phi')?.value   || '');
+  sv('bk-gamma-wert', document.getElementById('bk-modal-gamma')?.value || '');
+  sv('bk-c-wert',     document.getElementById('bk-modal-c')?.value     || '');
+  _bkGrundwasser = document.getElementById('bk-modal-gw')?.value || '';
+  saveBodenkennwerte();
+  document.getElementById('bk-edit-modal')?.remove();
+  updateBodenkennwerteUI();
 }
 
 function setKennwertStatus(statusId, hinweisId, val, ok, nok, okText, nokText) {
@@ -20160,6 +20563,8 @@ function renderBpGantt(targetId = 'bp-gantt-wrap', karteMode = false) {
       showBpPakCtxMenu(bar.getAttribute('data-bp-ctx'), e.clientX, e.clientY);
     });
   }
+
+  updateBpInfoBar();
 }
 
 // ── Baupaket auf Karte hervorheben ───────────────────────────────────────────
@@ -20674,7 +21079,7 @@ function renderBpZuweisungTable() {
       + '<td style="' + tdS + 'color:#6b7280;">' + (p.km_rs ? parseFloat(p.km_rs).toFixed(3) : '—') + '</td>'
       + '<td style="' + tdS + 'text-align:center;">' + typBadge + '</td>'
       + '<td style="' + tdS + '">'
-        + (ft ? '<span onclick="openFundtypProfilModal(\'' + ft.id + '\')" title="Fundamenttyp bearbeiten" style="font-size:11px;color:#374151;cursor:pointer;text-decoration:underline;text-decoration-color:#d1d5db;" onmouseover="this.style.color=\'#1d4ed8\'" onmouseout="this.style.color=\'#374151\'">' + _ftLabel(ft) + ' ↗</span>' : '<span style="color:#d1d5db;">—</span>')
+        + (ft ? '<span onclick="openFundtypProfilModal(\'' + ft.id + '\')" title="' + _ftLabel(ft) + '" style="font-size:11px;color:#374151;cursor:pointer;display:inline-flex;align-items:baseline;gap:2px;max-width:200px;" onmouseover="this.style.color=\'#1d4ed8\'" onmouseout="this.style.color=\'#374151\'"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:underline;text-decoration-color:#d1d5db;">' + _ftLabel(ft) + '</span><span style="flex-shrink:0;white-space:nowrap;text-decoration:underline;text-decoration-color:#d1d5db;">↗</span></span>' : '<span style="color:#d1d5db;">—</span>')
         + (verifyChips ? '<div style="margin-top:3px;display:flex;gap:3px;flex-wrap:wrap;">' + verifyChips + '</div>' : '')
         + '</td>'
       + (istPfahl && rowMode === 'neubau'
@@ -20808,24 +21213,92 @@ function saveBpVfk(pairId, checked) {
   }
 }
 
+function _ftMatchesNeigung(ft, neigung) {
+  if (!ft || ft.typ !== 'standard' || !neigung || neigung === '') return true;
+  const isBoesch = !!(ft.einsatzBedingung?.includes('14–33'));
+  if (neigung === '14–33°') return isBoesch;
+  if (neigung === '≤14°')   return !isBoesch;
+  if (neigung === '>33°')   return false;
+  return true;
+}
+
 function assignFundtypFromTable(pairId, val) {
-  if (!val) { assignFundtyp(pairId, ''); return; }
-  if (val.startsWith('__fam__')) {
-    const family   = val.replace('__fam__', '');
-    const allBp    = loadAllBauprojekt();
-    const neigung  = (allBp[pairId] || {}).neigung || '';
-    const resolved = resolveFtByFamilieNeigung(family, neigung, null);
-    if (resolved) {
-      assignFundtyp(pairId, resolved.id);
-      const all2 = loadAllBauprojekt();
-      if (!all2[pairId]) all2[pairId] = {};
-      all2[pairId].fundtyp   = resolved.name;
-      all2[pairId].ftProfilId = resolved.id;
-      saveAllBauprojekt(all2);
+  const targets = _listTargets(pairId);
+
+  if (targets.length === 1) {
+    if (!val) { assignFundtyp(pairId, ''); renderList(); return; }
+    if (val.startsWith('__fam__')) {
+      const family  = val.replace('__fam__', '');
+      const allBp   = loadAllBauprojekt();
+      const neigung = (allBp[pairId] || {}).neigung || '';
+      const resolved = resolveFtByFamilieNeigung(family, neigung, null);
+      if (resolved) {
+        assignFundtyp(pairId, resolved.id);
+        const all2 = loadAllBauprojekt();
+        all2[pairId] = { ...(all2[pairId] || {}), fundtyp: resolved.name, ftProfilId: resolved.id };
+        saveAllBauprojekt(all2);
+      }
+    } else {
+      assignFundtyp(pairId, val);
     }
-  } else {
-    assignFundtyp(pairId, val);
+    renderList();
+    return;
   }
+
+  // ── Multi-Row: apply to all selected, detect FT↔Neigung conflicts ──
+  const allBp    = loadAllBauprojekt();
+  const zuws     = loadFtZuweisungen();
+  const ok       = [];
+  const skipped  = [];
+
+  targets.forEach(id => {
+    const bp      = allBp[id] || {};
+    const neigung = bp.neigung || '';
+
+    if (!val) {
+      delete zuws[id];
+      allBp[id] = { ...bp, fundtyp: '', ftProfilId: '' };
+      ok.push(id);
+      return;
+    }
+
+    let ft = null;
+    if (val.startsWith('__fam__')) {
+      ft = resolveFtByFamilieNeigung(val.replace('__fam__', ''), neigung, null);
+      if (!ft) {
+        const famName = val.replace('__fam__', '');
+        skipped.push(`${famName} ≠ Neigung "${neigung || '—'}" (Mast ${loadPairs().find(p=>p.id===id)?.mast || id})`);
+        return;
+      }
+    } else {
+      ft = loadFtProfile().find(t => t.id === val);
+    }
+
+    if (ft && !_ftMatchesNeigung(ft, neigung)) {
+      skipped.push(`${ft.name.split('/')[0].trim()} ≠ Neigung "${neigung}" (Mast ${loadPairs().find(p=>p.id===id)?.mast || id})`);
+      return;
+    }
+
+    if (ft) {
+      zuws[id]  = ft.id;
+      allBp[id] = { ...bp, fundtyp: ft.name, ftProfilId: ft.id };
+      ok.push(id);
+    }
+  });
+
+  saveAllBauprojekt(allBp);
+  saveFtZuweisungen(zuws);
+
+  if (skipped.length > 0) {
+    const preview = skipped.slice(0, 2).join(' · ') + (skipped.length > 2 ? ` (+${skipped.length - 2})` : '');
+    _showListEditNotice(
+      `${ok.length}/${targets.length} zugewiesen · ${skipped.length} übersprungen: ${preview}`,
+      true
+    );
+  } else if (ok.length > 1) {
+    _showListEditNotice(`${ok.length} Positionen aktualisiert`);
+  }
+  renderList();
 }
 
 function toggleBpBedingung(pairId, key) {
@@ -24331,26 +24804,60 @@ function onFtRefTypChange() {
   }
   nameEl.value = ref ? (ref + (currentName ? ' – ' + currentName : '')) : currentName;
 
-  // Kopfabmessung aus Referenz-Standardtyp vorschlagen (nur wenn Felder noch leer)
-  if (ref) {
-    const stdTyp = DEFAULT_FT_PROFIL.find(t => t.typ === 'standard' && t.name.startsWith(ref));
-    if (stdTyp) {
-      const kopfBEl = document.getElementById('ft-prof-kopf-b');
-      const kopfLEl = document.getElementById('ft-prof-kopf-l');
-      const kopfHEl = document.getElementById('ft-prof-kopf-hoehe');
-      if (kopfBEl && !kopfBEl.value) {
-        const km = (stdTyp.kopfAbmessung || '').match(/(\d+)[×x](\d+)/);
-        if (km) {
-          kopfBEl.value = (parseInt(km[1]) / 1000).toFixed(3);
-          if (kopfLEl && !kopfLEl.value) kopfLEl.value = (parseInt(km[2]) / 1000).toFixed(3);
-        }
-      }
-      if (kopfHEl && !kopfHEl.value && stdTyp.kopfHoehe) {
-        kopfHEl.value = stdTyp.kopfHoehe;
-      }
-      ftUpdateVol();
+  if (!ref) return;
+
+  // Referenz-Standardtyp ermitteln (erster passender) + Overrides anwenden
+  const stdBase = DEFAULT_FT_PROFIL.find(t => t.typ === 'standard' && t.name.startsWith(ref));
+  if (!stdBase) return;
+  const geoOv = loadFtGeoOverrides()[stdBase.id] || {};
+  const matOv = loadFtMatOverrides()[stdBase.id] || {};
+  const geo   = { ...stdBase, ...geoOv };
+  const mat   = { ...stdBase, ...matOv };
+
+  const sv = (id, val) => { const el = document.getElementById(id); if (el && val != null && val !== '') el.value = val; };
+
+  // Kopf-Abmessungen
+  if (geo.kopfB != null) {
+    sv('ft-prof-kopf-b', parseFloat(geo.kopfB).toFixed(3));
+    sv('ft-prof-kopf-l', parseFloat(geo.kopfL ?? geo.kopfB).toFixed(3));
+  } else {
+    const km = (geo.kopfAbmessung || '').match(/(\d+)[×x](\d+)/);
+    if (km) {
+      sv('ft-prof-kopf-b', (parseInt(km[1]) / 1000).toFixed(3));
+      sv('ft-prof-kopf-l', (parseInt(km[2]) / 1000).toFixed(3));
     }
   }
+  sv('ft-prof-kopf-hoehe', geo.kopfHoehe);
+
+  // Block-Abmessungen
+  if (geo.blockB != null) {
+    sv('ft-prof-block-b', parseFloat(geo.blockB).toFixed(3));
+    sv('ft-prof-block-l', parseFloat(geo.blockL ?? geo.blockB).toFixed(3));
+  } else {
+    const bm = (geo.blockAbmessung || '').match(/(\d+)[×x](\d+)/);
+    if (bm) {
+      sv('ft-prof-block-b', (parseInt(bm[1]) / 1000).toFixed(3));
+      sv('ft-prof-block-l', (parseInt(bm[2]) / 1000).toFixed(3));
+    }
+  }
+
+  // Materialkennwerte
+  sv('ft-prof-beton',           mat.beton);
+  sv('ft-prof-betondeckung',    mat.betondeckung);
+  sv('ft-prof-bewehrungsstahl', mat.bewehrungsstahl || mat.bewehrung);
+  sv('ft-prof-laengs-anzahl',   mat.laengsAnzahl);
+  sv('ft-prof-laengs-dm',       mat.laengsDurchmesser);
+  sv('ft-prof-buegel-anzahl',   mat.buegelAnzahl);
+  sv('ft-prof-buegel-dm',       mat.buegelDurchmesser);
+  sv('ft-prof-buegel-seite',    mat.buegelSeitenlaenge);
+  sv('ft-prof-schraub-anzahl',  mat.schraubenAnzahl);
+  sv('ft-prof-schraub-dm',      mat.schraubenDurchmesser);
+  sv('ft-prof-schraub-laenge',  mat.schraubenLaenge || mat.schraubLaenge);
+
+  // VFK-Zeichnungsnummer
+  sv('ft-prof-vfk-zeich', geo.vfkZeichnungsNr);
+
+  ftUpdateVol();
 }
 
 function ftUpdateVol() {
@@ -26811,7 +27318,7 @@ const LIST_COLUMNS = {
     { key: 'fundtyp',  label: 'Fundamenttyp', render: p => { const bp=loadAllBauprojekt()[p.id]||{}; return bp.fundtyp||p.fundtyp||'—'; } },
     { key: 'bestand',  label: 'Bestand/Neu',  render: p => { const bp=loadAllBauprojekt()[p.id]||{}; const b=bp.bestand||p.bestand||''; return b==='neu'?'Neu':b==='prov'?'Prov.':b==='bestand'?'Bestand':'—'; } },
     { key: 'neigung',  label: 'Neigung',      render: p => { const bp=loadAllBauprojekt()[p.id]||{}; return bp.neigung||p.neigung||'—'; } },
-    { key: 'boden',    label: 'Baugrund',     render: p => { const bp=loadAllBauprojekt()[p.id]||{}; const me=bp.bkMe; const phi=bp.bkPhi; if(!me&&!phi) return '—'; const grenz=BK_GRENZWERTE[bp.bkBodentyp||'fein']; const ok=(!me||parseFloat(me)>=grenz.me)&&(!phi||parseFloat(phi)>=27); return `<span style="color:${ok?'#16a34a':'#dc2626'};font-weight:600;">${ok?'Erfüllt':'Nicht erfüllt'}</span>`; } },
+    { key: 'boden',    label: 'Baugrund',     render: p => { const bp=loadAllBauprojekt()[p.id]||{}; const me=bp.bkMe; const phi=bp.bkPhi; if(!me&&!phi) return '—'; const grenz=BK_GRENZWERTE[bp.bkBodentyp]||BK_GRENZWERTE.fein; const ok=(!me||parseFloat(me)>=grenz.me)&&(!phi||parseFloat(phi)>=27); return `<span style="color:${ok?'#16a34a':'#dc2626'};font-weight:600;">${ok?'Erfüllt':'Nicht erfüllt'}</span>`; } },
   ],
   ausfuehrung: [
     { key: 'km',      label: 'KM',      render: p => p.km_rs ? parseFloat(p.km_rs).toFixed(3) : '—' },
@@ -30851,7 +31358,7 @@ document.addEventListener('mouseup',   e => { bpResizeEnd(e);  bpMoveEnd(e);  bp
 
 <!-- MODAL: App-Einstellungen (5 Tabs) -->
 <div class="modal-overlay" id="app-settings-modal" onclick="if(event.target===this)closeAppSettingsModal()">
-  <div class="modal" style="width:520px;max-height:92vh;display:flex;flex-direction:column;padding:0;overflow:hidden;">
+  <div id="app-settings-modal-inner" class="modal" style="width:520px;max-height:92vh;display:flex;flex-direction:column;padding:0;overflow:hidden;transition:width 0.2s;">
 
     <!-- Header -->
     <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px 0;flex-shrink:0;">
@@ -30860,12 +31367,13 @@ document.addEventListener('mouseup',   e => { bpResizeEnd(e);  bpMoveEnd(e);  bp
     </div>
 
     <!-- Tab-Leiste -->
-    <div style="display:flex;gap:4px;padding:14px 22px 0;flex-shrink:0;border-bottom:1px solid #f0f2f5;padding-bottom:0;">
+    <div style="display:flex;gap:4px;padding:14px 22px 0;flex-shrink:0;border-bottom:1px solid #f0f2f5;padding-bottom:0;overflow-x:auto;scrollbar-width:none;">
       <button class="app-settings-tab-btn" data-tab="allgemein" onclick="openAppSettingsTab('allgemein')">Allgemein</button>
       <button class="app-settings-tab-btn" data-tab="status"    onclick="openAppSettingsTab('status')">Status</button>
       <button class="app-settings-tab-btn" data-tab="sidebar"   onclick="openAppSettingsTab('sidebar')">Sidebar</button>
       <button class="app-settings-tab-btn" data-tab="phasen"    onclick="openAppSettingsTab('phasen')">Phasen</button>
       <button class="app-settings-tab-btn" data-tab="vorlage"   onclick="openAppSettingsTab('vorlage')">Vorlage</button>
+      <button class="app-settings-tab-btn" data-tab="paramdb"   onclick="openAppSettingsTab('paramdb')" style="white-space:nowrap;">Parameterdatenbank</button>
     </div>
 
     <!-- Scrollbarer Inhalt -->
@@ -30875,10 +31383,6 @@ document.addEventListener('mouseup',   e => { bpResizeEnd(e);  bpMoveEnd(e);  bp
       <div class="app-settings-panel" data-panel="allgemein">
         <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Personendaten</div>
         <div class="modal-grid" style="margin-bottom:14px;">
-          <div class="modal-field" style="grid-column:1/-1;">
-            <label>Projektnummer</label>
-            <input class="modal-input" id="up-projektnummer" placeholder="z.B. 2024-001">
-          </div>
         <div class="modal-field" style="grid-column:1/-1;">
             <label>Name / Projektleiter</label>
             <input class="modal-input" id="up-name" placeholder="z.B. Ivan Perić">
@@ -31023,7 +31527,7 @@ document.addEventListener('mouseup',   e => { bpResizeEnd(e);  bpMoveEnd(e);  bp
       <div class="app-settings-panel" data-panel="phasen" style="display:none;">
         <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Standard-Phasen umbenennen</div>
         <p style="font-size:11px;color:#6b7280;margin:0 0 14px;line-height:1.5;">
-          Labels der drei Kern-Phasen anpassen. Eigene Phasen können unten hinzugefügt werden.
+          Labels der drei Kern-Phasen anpassen.
         </p>
 
         <!-- Baugrund -->
@@ -31082,14 +31586,6 @@ document.addEventListener('mouseup',   e => { bpResizeEnd(e);  bpMoveEnd(e);  bp
             </div>
           </div>
         </div>
-
-        <!-- Eigene Phasen -->
-        <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Eigene Phasen</div>
-        <div id="custom-phases-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;"></div>
-        <button onclick="addCustomPhaseRow()"
-          style="width:100%;padding:8px;border-radius:7px;border:1px dashed #d1d5db;background:transparent;color:#6b7280;font-size:12px;font-weight:600;cursor:pointer;margin-bottom:14px;">
-          + Eigene Phase hinzufügen
-        </button>
 
         <button onclick="savePhasesCfg()"
           style="width:100%;padding:9px;border-radius:8px;border:none;background:#1a3a5c;color:white;font-size:12px;font-weight:700;cursor:pointer;">
@@ -31170,6 +31666,70 @@ document.addEventListener('mouseup',   e => { bpResizeEnd(e);  bpMoveEnd(e);  bp
           </label>
         </div>
         <p style="font-size:11px;color:#9ca3af;margin:0;">Vorlagen können zwischen Geräten oder Mitarbeitern geteilt werden.</p>
+      </div>
+
+      <!-- ══ TAB: Parameterdatenbank ══ -->
+      <div class="app-settings-panel" data-panel="paramdb" style="display:none;">
+        <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Standardfundamente FL — Parameterdatenbank</div>
+        <p style="font-size:11px;color:#6b7280;margin:0 0 10px;line-height:1.5;">SBB Dok. 0161.1011.0002 · Anpassungen werden lokal gespeichert und können via Excel ausgetauscht werden.</p>
+        <!-- Toolbar -->
+        <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">
+          <button id="paramdb-edit-mode-btn" onclick="toggleParamdbEditMode()"
+            style="padding:4px 10px;border-radius:6px;border:1px solid #d1d5db;background:white;font-size:11px;cursor:pointer;color:#374151;display:flex;align-items:center;gap:4px;">
+            ✏ Bearbeiten
+          </button>
+          <button onclick="exportParamdbExcel()"
+            style="padding:4px 10px;border-radius:6px;border:1px solid #16a34a;background:#f0fdf4;font-size:11px;cursor:pointer;color:#15803d;display:flex;align-items:center;gap:4px;">
+            ⬇ Excel Export
+          </button>
+          <label style="padding:4px 10px;border-radius:6px;border:1px solid #2563eb;background:#eff6ff;font-size:11px;cursor:pointer;color:#1d4ed8;display:inline-flex;align-items:center;gap:4px;">
+            ⬆ Excel Import
+            <input type="file" accept=".xlsx,.xls" onchange="importParamdbExcel(this)" style="display:none;">
+          </label>
+          <button onclick="resetParamdbOverrides()" title="Alle lokalen Anpassungen zurücksetzen"
+            style="padding:4px 8px;border-radius:6px;border:1px solid #f59e0b;background:#fffbeb;font-size:11px;cursor:pointer;color:#92400e;">
+            ↺ Reset
+          </button>
+        </div>
+        <!-- Sub-Tab-Bar -->
+        <div style="display:flex;border-bottom:1px solid #e5e7eb;background:#fafafa;margin-bottom:0;">
+          <button id="paramdb-tab-geo" onclick="paramdbSubTab('geo')" style="padding:7px 14px;border:none;border-bottom:2px solid #2563eb;background:transparent;font-size:11px;font-weight:700;color:#2563eb;cursor:pointer;">Geometrie</button>
+          <button id="paramdb-tab-mat" onclick="paramdbSubTab('mat')" style="padding:7px 14px;border:none;border-bottom:2px solid transparent;background:transparent;font-size:11px;font-weight:600;color:#6b7280;cursor:pointer;">Material &amp; Bewehrung</button>
+        </div>
+        <!-- Panel: Geometrie -->
+        <div id="paramdb-panel-geo" style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:500px;">
+            <thead>
+              <tr style="background:#f1f5f9;">
+                <th style="padding:6px 8px;text-align:left;font-weight:700;color:#374151;border-bottom:2px solid #e5e7eb;white-space:nowrap;">Typ</th>
+                <th style="padding:6px 8px;text-align:left;font-weight:700;color:#374151;border-bottom:2px solid #e5e7eb;white-space:nowrap;">Kopf b×b</th>
+                <th style="padding:6px 8px;text-align:left;font-weight:700;color:#374151;border-bottom:2px solid #e5e7eb;white-space:nowrap;">Kopf h</th>
+                <th style="padding:6px 8px;text-align:left;font-weight:700;color:#374151;border-bottom:2px solid #e5e7eb;white-space:nowrap;">Block b×b</th>
+                <th style="padding:6px 8px;text-align:left;font-weight:700;color:#374151;border-bottom:2px solid #e5e7eb;white-space:nowrap;">Tiefe t</th>
+                <th style="padding:6px 8px;text-align:left;font-weight:700;color:#374151;border-bottom:2px solid #e5e7eb;white-space:nowrap;">Volumen</th>
+              </tr>
+            </thead>
+            <tbody id="paramdb-geo-body"></tbody>
+          </table>
+        </div>
+        <!-- Panel: Material & Bewehrung -->
+        <div id="paramdb-panel-mat" style="display:none;overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:620px;">
+            <thead>
+              <tr style="background:#f1f5f9;">
+                <th style="padding:6px 8px;text-align:left;font-weight:700;color:#374151;border-bottom:2px solid #e5e7eb;white-space:nowrap;">Typ</th>
+                <th style="padding:6px 8px;text-align:left;font-weight:700;color:#374151;border-bottom:2px solid #e5e7eb;white-space:nowrap;">Beton</th>
+                <th style="padding:6px 8px;text-align:left;font-weight:700;color:#374151;border-bottom:2px solid #e5e7eb;white-space:nowrap;">Deckung</th>
+                <th style="padding:6px 8px;text-align:left;font-weight:700;color:#374151;border-bottom:2px solid #e5e7eb;white-space:nowrap;">Stahl</th>
+                <th style="padding:6px 8px;text-align:left;font-weight:700;color:#374151;border-bottom:2px solid #e5e7eb;white-space:nowrap;">Längs</th>
+                <th style="padding:6px 8px;text-align:left;font-weight:700;color:#374151;border-bottom:2px solid #e5e7eb;white-space:nowrap;">Quer</th>
+                <th style="padding:6px 8px;text-align:left;font-weight:700;color:#374151;border-bottom:2px solid #e5e7eb;white-space:nowrap;">Anker</th>
+              </tr>
+            </thead>
+            <tbody id="paramdb-mat-body"></tbody>
+          </table>
+        </div>
+        <div style="margin-top:8px;font-size:10px;color:#9ca3af;">Anpassungen im Browser gespeichert. Export → Excel bearbeiten → Import für SharePoint-Archivierung.</div>
       </div>
 
     </div><!-- /scroll -->
